@@ -29,10 +29,10 @@ blocker forces a temporary deviation.
 
 This phase prepares the repo for feature work.
 
-- [ ] Initialize the `Next.js` App Router project with TypeScript.
-- [ ] Add the core dependency stack and project scripts.
-- [ ] Add `shadcn/ui`, theme support, and a bilingual shell scaffold.
-- [ ] Add `.env.example`, deployment skeleton files, and `Docker Compose`.
+- [x] Initialize the `Next.js` App Router project with TypeScript.
+- [x] Add the core dependency stack and project scripts.
+- [x] Add `shadcn/ui`, theme support, and a bilingual shell scaffold.
+- [x] Add `.env.example`, deployment skeleton files, and `Docker Compose`.
 
 ### Phase 1: data layer
 
@@ -116,8 +116,10 @@ List real blockers here. Remove or update them when they are resolved.
 
 ## Next recommended task
 
-The next recommended task is the first incomplete item in **Phase 0**:
-initialize the `Next.js` App Router project with TypeScript.
+The next recommended task is the first item in **Phase 1: data layer** —
+add Postgres connectivity for the dashboard-owned database. After connectivity,
+proceed in order through migrations, family seed data, and the first-wave
+linked service catalog.
 
 ## Session log
 
@@ -166,3 +168,54 @@ Open issues or risks:
 Next recommended task:
 - Start Phase 0 by initializing the `Next.js` App Router project with
   TypeScript.
+
+#### May 5, 2026 (Phase 0 foundation)
+
+Date: May 5, 2026
+Owner: Devin (Claude)
+Focus: Phase 0 — foundation scaffolding for UltraDashboard V1.
+Files changed:
+- `package.json`, `tsconfig.json`, `next.config.mjs`, `next-env.d.ts`
+- `postcss.config.mjs`, `tailwind.config.ts`, `components.json`
+- `.eslintrc.json`, `.prettierrc.json`, `.gitignore`, `.dockerignore`
+- `.env.example`, `Dockerfile`, `docker-compose.yml`
+- `app/globals.css`, `app/layout.tsx`, `app/page.tsx`, `app/not-found.tsx`
+- `app/overview/page.tsx`, `app/omniroute/page.tsx`
+- `app/account-manager/{page,layout}.tsx`,
+  `app/account-manager/[family]/page.tsx`
+- `components/providers/{theme,locale}-provider.tsx`
+- `components/shell/{top-nav,theme-toggle,locale-toggle,glass-panel,shader-background}.tsx`
+- `components/ui/{button,dropdown-menu}.tsx`
+- `lib/cn.ts`, `lib/i18n/{locales,dictionaries,cookie,cookie-client}.ts`
+- `public/favicon.svg`, `README.md`
+Verification:
+- `npm install` — clean install, no peer-dependency conflicts.
+- `npm run typecheck` — passes (`tsc --noEmit`).
+- `npm run lint` — passes (`next lint`, no warnings or errors).
+- `npm run build` — production build succeeds with `output: "standalone"`;
+  all 10 routes generated, including `/account-manager/[family]` for
+  `github`, `google`, and `zoho` via `generateStaticParams`.
+Status changes in tracker:
+- Phase 0 fully marked `[x]`.
+- Next recommended task pointer moved from Phase 0 to Phase 1.
+Open issues or risks:
+- Magic MCP / 21st.dev integration is not installed in the org marketplace.
+  Premium components are currently hand-built using shadcn primitives plus
+  a CSS-only shader-backed atmosphere (`components/shell/shader-background.tsx`).
+  When the user provisions a 21st.dev / Magic MCP API key, future Phase 2
+  work can pull richer premium blocks; the existing primitives are designed
+  to be drop-in replaceable.
+- DB libraries (Postgres client, Drizzle ORM) intentionally not added in
+  Phase 0 to keep the dependency surface minimal — they belong to Phase 1.
+- Inter / JetBrains Mono fonts are loaded via `next/font/google`; the build
+  attempts to fetch them at compile time, which means the build host needs
+  network access to Google Fonts. If a future build environment is offline,
+  swap to `next/font/local` with bundled font files.
+Next recommended task:
+- Start Phase 1 by adding Postgres connectivity (Drizzle ORM + `pg`),
+  creating the migrations folder, and wiring up `DATABASE_URL` in a
+  server-only DB client. Then move on to migrations for the core entities
+  defined in `docs/ultradashboard-spec.md` (`service_families`,
+  `root_accounts`, `linked_service_accounts`, `tags`,
+  `linked_service_account_tags`, `instruction_documents`,
+  `omniroute_provider_snapshots`, `omniroute_sync_runs`).

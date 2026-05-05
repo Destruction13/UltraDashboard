@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light theme: cool slate base with iridescent accents. */
+    --background: 220 30% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 230 85% 56%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 10% 38%;
+    --accent: 210 100% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 86%;
+    --input: 220 13% 86%;
+    --ring: 230 85% 56%;
+    --radius: 0.875rem;
+
+    /* Glass tokens — used by the premium GlassPanel primitive. */
+    --glass: 220 40% 98%;
+    --glass-stroke: 220 30% 80%;
+    --glass-highlight: 0 0% 100%;
+
+    /* Shader background palette — light. */
+    --shader-a: 230 90% 70%;
+    --shader-b: 280 80% 70%;
+    --shader-c: 200 90% 70%;
+  }
+
+  .dark {
+    /* Dark theme: deep cosmic slate with electric accents. */
+    --background: 226 36% 6%;
+    --foreground: 220 20% 96%;
+    --card: 226 30% 9%;
+    --card-foreground: 220 20% 96%;
+    --primary: 220 95% 70%;
+    --primary-foreground: 226 36% 6%;
+    --secondary: 226 24% 14%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 226 24% 14%;
+    --muted-foreground: 220 15% 65%;
+    --accent: 226 30% 16%;
+    --accent-foreground: 220 20% 96%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 220 20% 96%;
+    --border: 226 24% 18%;
+    --input: 226 24% 18%;
+    --ring: 220 95% 70%;
+
+    /* Glass tokens — dark. */
+    --glass: 226 30% 12%;
+    --glass-stroke: 226 30% 28%;
+    --glass-highlight: 226 50% 28%;
+
+    /* Shader background palette — dark. */
+    --shader-a: 235 90% 60%;
+    --shader-b: 285 80% 55%;
+    --shader-c: 195 90% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+
+  body {
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 90% 60% at 0% 0%, hsl(var(--shader-a) / 0.18), transparent 60%),
+      radial-gradient(ellipse 80% 60% at 100% 0%, hsl(var(--shader-b) / 0.14), transparent 65%),
+      radial-gradient(ellipse 100% 80% at 50% 110%, hsl(var(--shader-c) / 0.12), transparent 70%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply relative rounded-[var(--radius)] border bg-[hsl(var(--glass)/0.6)] backdrop-blur-xl;
+    border-color: hsl(var(--glass-stroke) / 0.6);
+    box-shadow:
+      0 1px 0 0 hsl(var(--glass-highlight) / 0.5) inset,
+      0 24px 64px -32px hsl(var(--shader-a) / 0.45);
+  }
+
+  .glass-panel::before {
+    content: "";
+    @apply pointer-events-none absolute inset-0 rounded-[inherit] opacity-50;
+    background: linear-gradient(
+      145deg,
+      hsl(var(--glass-highlight) / 0.18),
+      transparent 35%,
+      transparent 70%,
+      hsl(var(--shader-b) / 0.08)
+    );
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

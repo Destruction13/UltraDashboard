@@ -1,0 +1,60 @@
+# UltraDashboard — V1 deployment skeleton.
+#
+# Runs alongside OmniRoute on the same VPS. The OmniRoute SQLite store is
+# mounted READ-ONLY so the adapter cannot write into it.
+#
+# This file is the deployment skeleton called out in Phase 0 of the tracker.
+# Adjust env values before bringing it up in production.
+
+services:
+  ultradashboard-db:
+    image: postgres:16-alpine
+    container_name: ultradashboard-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ultradash}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ultradash}
+      POSTGRES_DB: ${POSTGRES_DB:-ultradash}
+    volumes:
+      - ultradashboard-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ultradash}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ultradashboard-net
+
+  ultradashboard-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ultradashboard-web
+    restart: unless-stopped
+    depends_on:
+      ultradashboard-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-ultradash}:${POSTGRES_PASSWORD:-ultradash}@ultradashboard-db:5432/${POSTGRES_DB:-ultradash}
+      ULTRADASHBOARD_BASE_URL: ${ULTRADASHBOARD_BASE_URL:-http://localhost:3000}
+      OMNIROUTE_SQLITE_PATH: /var/omniroute/storage.sqlite
+      OMNIROUTE_DISPLAY_ENDPOINT: ${OMNIROUTE_DISPLAY_ENDPOINT:-}
+      OMNIROUTE_TUNNEL_INFO_JSON: ${OMNIROUTE_TUNNEL_INFO_JSON:-{}}
+      SYNC_CRON_OR_INTERVAL: ${SYNC_CRON_OR_INTERVAL:-1h}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-ru}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      # READ-ONLY mount of OmniRoute's SQLite store. NEVER mount as rw.
+      - ${OMNIROUTE_SQLITE_HOST_PATH:-/root/.omniroute/storage.sqlite}:/var/omniroute/storage.sqlite:ro
+    networks:
+      - ultradashboard-net
+
+networks:
+  ultradashboard-net:
+    driver: bridge
+
+volumes:
+  ultradashboard-db-data:
+    driver: local
