@@ -38,10 +38,10 @@ This phase prepares the repo for feature work.
 
 This phase creates the dashboard-owned persistence model.
 
-- [ ] Add Postgres connectivity.
-- [ ] Create migrations for all core UltraDashboard tables.
-- [ ] Seed the `GitHub`, `Google`, and `Zoho` service families.
-- [ ] Seed the first-wave linked service catalog: `ChatGPT`, `Codex`,
+- [x] Add Postgres connectivity.
+- [x] Create migrations for all core UltraDashboard tables.
+- [x] Seed the `GitHub`, `Google`, and `Zoho` service families.
+- [x] Seed the first-wave linked service catalog: `ChatGPT`, `Codex`,
   `GitHub`, and `Devin`.
 
 ### Phase 2: shell and navigation
@@ -116,10 +116,12 @@ List real blockers here. Remove or update them when they are resolved.
 
 ## Next recommended task
 
-The next recommended task is the first item in **Phase 1: data layer** —
-add Postgres connectivity for the dashboard-owned database. After connectivity,
-proceed in order through migrations, family seed data, and the first-wave
-linked service catalog.
+The next recommended task is **Phase 2: shell and navigation**. The route
+skeletons, top navigation, and theme support already landed in Phase 0 — the
+remaining Phase 2 work is to deepen the premium visual treatment (richer
+glass / shader compositions, refined empty states, shared layout primitives)
+and to polish the navigation system in preparation for Phase 3 AccountManager
+data flows.
 
 ## Session log
 
@@ -219,3 +221,55 @@ Next recommended task:
   `root_accounts`, `linked_service_accounts`, `tags`,
   `linked_service_account_tags`, `instruction_documents`,
   `omniroute_provider_snapshots`, `omniroute_sync_runs`).
+
+#### May 5, 2026 (Phase 1 data layer)
+
+Date: May 5, 2026
+Owner: Devin (Claude)
+Focus: Phase 1 — Postgres connectivity, schema migrations, and seed data.
+Files changed:
+- `package.json` (add `drizzle-orm`, `pg`, `@types/pg`, `drizzle-kit`,
+  `dotenv`, `tsx` and `db:generate / db:migrate / db:seed / db:studio`
+  scripts)
+- `drizzle.config.ts` (snake_case casing, schema/output paths)
+- `lib/db/schema.ts` (full V1 schema for the 8 spec entities)
+- `lib/db/index.ts` (server-only `pg.Pool` singleton + Drizzle client)
+- `lib/db/catalog.ts` (typed first-wave linked service catalog +
+  `InstructionDocumentContent` content shape from the spec)
+- `scripts/db/migrate.ts` (CLI migration runner)
+- `scripts/db/seed.ts` (idempotent seed for families + starter tags +
+  catalog logging)
+- `drizzle/0000_0001_initial_schema.sql` and `drizzle/meta/*` (generated)
+- `docs/implementation-tracker.md` (status updates + this entry)
+Verification:
+- `npx drizzle-kit generate` — produced one migration covering all 8 tables
+  with PKs, FKs, and indexes.
+- Spun up `postgres:16-alpine` on port 5433 in Docker.
+- `npm run db:migrate` — applied the migration cleanly.
+- `npm run db:seed` — inserted 3 families and 6 starter tags. Re-running
+  the seed kept the row counts stable (idempotency confirmed via
+  `SELECT count(*)`).
+- Confirmed the 8 tables exist via `\dt` and inspected `service_families`
+  + `tags` rows.
+- `npm run typecheck`, `npm run lint`, `npm run build` — all green.
+- Tore down the test container after verification.
+Status changes in tracker:
+- All 4 Phase 1 items flipped to `[x]`.
+- "Next recommended task" pointer advanced to Phase 2.
+Open issues or risks:
+- Secrets stored in plain form in `linked_service_accounts.password_plaintext`
+  and `linked_service_accounts.totp_secret_plaintext` per the spec's accepted
+  V1 trust posture. Encryption at rest is explicitly deferred. Server code
+  must keep these columns out of logs.
+- The first-wave linked service catalog is exported from `lib/db/catalog.ts`
+  as a typed reference shape; it is intentionally NOT pre-seeded as rows in
+  `linked_service_accounts` because every linked service must be bound to a
+  real `root_account` (created during Phase 3 AccountManager flows).
+- Drizzle's `next/font/google` build still needs network access to Google
+  Fonts — this remains the same risk noted in the Phase 0 entry.
+Next recommended task:
+- Start Phase 2 by deepening the premium visual treatment of the existing
+  shell: richer glass / shader compositions on `/overview` and
+  `/omniroute`, shared layout primitives for upcoming AccountManager
+  pages, and polished empty / loading states. Phase 3 (AccountManager
+  CRUD) can begin in parallel against the now-live schema.
