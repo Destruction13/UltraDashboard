@@ -33,9 +33,13 @@ export type ShellDictionary = {
     loading: string;
     empty: string;
     error: string;
+    pendingFamilyData: string;
+    pendingOmniRouteData: string;
+    pendingOverviewData: string;
   };
   copy: {
     skipToContent: string;
+    perimeterTrust: string;
   };
 };
 
@@ -65,9 +69,15 @@ const ru: ShellDictionary = {
     loading: "Загрузка…",
     empty: "Пока пусто",
     error: "Что-то пошло не так",
+    pendingFamilyData: "Появится в Phase 3 трекера: таблица root-аккаунтов, фильтры по тегам, поиск.",
+    pendingOmniRouteData:
+      "Появится в Phase 5–6: реальные данные провайдеров, статус туннеля и история синхронизаций.",
+    pendingOverviewData:
+      "Появится после Phase 1 и Phase 5: счётчики семейств, последняя синхронизация OmniRoute и пинированные инструкции.",
   },
   copy: {
     skipToContent: "Перейти к содержимому",
+    perimeterTrust: "Доступ только через периметр / туннель",
   },
 };
 
@@ -97,9 +107,15 @@ const en: ShellDictionary = {
     loading: "Loading…",
     empty: "Nothing here yet",
     error: "Something went wrong",
+    pendingFamilyData: "Lands in Phase 3: root account table, tag filtering, and search.",
+    pendingOmniRouteData:
+      "Lands in Phase 5–6: real provider data, tunnel status, and sync history.",
+    pendingOverviewData:
+      "Lands after Phase 1 and Phase 5: family counts, last OmniRoute sync, and pinned instructions.",
   },
   copy: {
     skipToContent: "Skip to content",
+    perimeterTrust: "Reachable only through the perimeter / tunnel",
   },
 };
 

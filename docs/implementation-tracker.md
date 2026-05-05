@@ -48,10 +48,10 @@ This phase creates the dashboard-owned persistence model.
 
 This phase builds the product frame.
 
-- [ ] Build the `Overview`, `OmniRoute`, and `AccountManager` route skeletons.
-- [ ] Build the top navigation and layout system.
-- [ ] Implement dark and light themes.
-- [ ] Add premium visual direction and shared UI primitives.
+- [x] Build the `Overview`, `OmniRoute`, and `AccountManager` route skeletons.
+- [x] Build the top navigation and layout system.
+- [x] Implement dark and light themes.
+- [x] Add premium visual direction and shared UI primitives.
 
 ### Phase 3: AccountManager core
 
@@ -116,12 +116,15 @@ List real blockers here. Remove or update them when they are resolved.
 
 ## Next recommended task
 
-The next recommended task is **Phase 2: shell and navigation**. The route
-skeletons, top navigation, and theme support already landed in Phase 0 — the
-remaining Phase 2 work is to deepen the premium visual treatment (richer
-glass / shader compositions, refined empty states, shared layout primitives)
-and to polish the navigation system in preparation for Phase 3 AccountManager
-data flows.
+The next recommended task is **Phase 3: AccountManager core**. The shared
+layout primitives (`<PageShell>`, `<TwoColumnDetail>`, `<TabBar>`,
+`<KpiTile>`, `<EmptyState>`, `<SectionHeader>`, `<Skeleton>`, `<Badge>`,
+`<PhaseTag>`, `<Card>`) now exist on top of the data layer from Phase 1, so
+implementation of the AccountManager root-account list, family tabs, search,
+and tag filtering can start immediately. Begin with a server component on
+`/account-manager/[family]` that reads from the `root_accounts` and
+`linked_service_accounts` tables (joined to `service_families`), then wire
+the two-column detail card on a dynamic detail route.
 
 ## Session log
 
@@ -273,3 +276,121 @@ Next recommended task:
   `/omniroute`, shared layout primitives for upcoming AccountManager
   pages, and polished empty / loading states. Phase 3 (AccountManager
   CRUD) can begin in parallel against the now-live schema.
+
+#### May 5, 2026 (Phase 2 shell + primitives)
+
+Date: May 5, 2026
+Owner: Devin (Claude)
+Focus: Phase 2 — premium visual deepening + shared layout primitives.
+Files changed:
+- `app/globals.css` (animated `aurora-drift`, `aurora-seam`, `shimmer-bar`,
+  `glass-panel--rail`, scrollbar utility, tag color tokens, `prefers-reduced-motion`
+  guards)
+- `components/shell/shader-background.tsx` (4-layer aurora with slow drift,
+  reduced-motion aware)
+- `components/shell/top-nav.tsx` (active-state ring + relative wrapping for
+  the aurora seam under the sticky nav)
+- `components/shell/{page-shell,section-header,kpi-tile,empty-state,tab-bar,two-column-detail,phase-tag}.tsx`
+  (new shared primitives)
+- `components/ui/{badge,skeleton,card}.tsx` (new shadcn-compatible primitives)
+- `lib/i18n/dictionaries.ts` (new shell strings: pending-state copy,
+  perimeter-trust badge text)
+- `app/overview/page.tsx`, `app/omniroute/page.tsx` (refactored to use
+  `<PageShell>` + `<KpiTile>` + `<EmptyState>` + `<PhaseTag>`)
+- `app/account-manager/layout.tsx` (uses `<TabBar>` for animated family tabs
+  with active background and bottom seam)
+- `app/account-manager/[family]/page.tsx` (rebuilt with sticky tags rail,
+  search input scaffold, row skeletons, and a dedicated `<EmptyState>`)
+Verification:
+- `npm run typecheck` — clean.
+- `npm run lint` — clean.
+- `npm run build` — production build succeeds; same 10 routes; first-load JS
+  unchanged for static routes; `/overview` slightly larger (164 B → still
+  <110 kB total) due to the new icons and `<KpiTile>` skeletons.
+Status changes in tracker:
+- All 4 Phase 2 items flipped to `[x]`.
+- "Next recommended task" pointer advanced from Phase 2 to Phase 3.
+Open issues or risks:
+- The shader is still pure CSS. When a real WebGL shader (or Magic MCP /
+  21st.dev block) is provisioned, swap the body of
+  `components/shell/shader-background.tsx` — every layout primitive sits on
+  top of it without any other hookup.
+- The disabled `<input type="search">` and disabled "Create root account"
+  button on the family page are deliberately non-functional placeholders
+  for Phase 3 — they exist so the layout doesn't shift when the live
+  controls land.
+- `<TabBar>` accepts `href: string` and casts to `Route` at the `<Link>`
+  call site. Next.js typed routes do not narrow dynamic-segment routes
+  like `/account-manager/[family]` to a literal `Route` union, so the cast
+  is intentional. Consumers must still pass real route strings.
+Next recommended task:
+- Start Phase 3 by replacing the family-page placeholders with real data
+  from Phase 1: read `service_families` + `root_accounts` (server
+  component), render with `<RowSkeleton>` removed and a real list, then
+  build the linked-service detail card using `<TwoColumnDetail>` (left =
+  credentials, right = `instruction_documents.content_json` rendered into
+  the Phase 4 roadmap blocks).
+
+#### May 5, 2026 (Phase 2.1 design rework with 21st.dev / Magic MCP)
+
+Date: May 5, 2026
+Owner: Devin (Claude)
+Focus: Phase 2.1 — premium design rework using real 21st.dev / Magic MCP
+inspiration blocks (per user feedback: hand-rolled shadcn glass scored 2/10).
+Files changed:
+- `package.json` (added `three`, `framer-motion`, `@types/three`)
+- `components/shell/shader-canvas.tsx` (new — WebGL aurora shader, adapted
+  from 21st.dev "Animated Shader Background"; tuned for dashboard with
+  slower drift, lower amplitude, theme-token-driven palette,
+  `prefers-reduced-motion` and visibility-pause guards)
+- `components/shell/glow-card.tsx` (new — mouse-tracking gradient halo +
+  hover scale, adapted from 21st.dev "Animated Card")
+- `components/shell/stat-card.tsx` (new — moving halo + rotating ray +
+  text-shadow pulse on the value, adapted from 21st.dev "Stat Card")
+- `components/shell/sliding-tabs.tsx` (new — animated indicator with
+  framer-motion spring + glow blur layer; adapted from 21st.dev
+  "Sliding Tabs", driven by `usePathname()` and Next.js `<Link>`)
+- `components/shell/animated-button.tsx` (new — motion variants + shimmer
+  pass + magnetic glow, adapted from 21st.dev "Animated Gradient Button")
+- `components/shell/scroll-reveal.tsx` (new — Apple-style fade + lift on
+  viewport entry, honours `prefers-reduced-motion`)
+- `components/shell/shader-background.tsx` (now layers WebGL canvas on top
+  of the CSS gradients + masked dot grid + grain)
+- `components/shell/top-nav.tsx` (tube-light layoutId indicator + brand
+  badge hover-glow)
+- `components/shell/page-shell.tsx` (gradient title clip + scroll-reveal
+  on header + content; new optional `hero` slot)
+- `components/shell/kpi-tile.tsx` (now a thin compatibility wrapper that
+  renders `<StatCard>`, exposes `tone` prop)
+- `components/shell/tab-bar.tsx` (now a thin compatibility wrapper that
+  renders `<SlidingTabs>`)
+- `app/overview/page.tsx` (StatCard tones + GlowCard module navigators
+  with mouse-tracked halo + scroll-reveal sections)
+- `app/omniroute/page.tsx` (StatCard tones + GlowCard skeleton modules
+  with hover lift + scroll-reveal)
+- `app/account-manager/layout.tsx` (gradient title + scroll-reveal stages)
+- `app/account-manager/[family]/page.tsx` (GlowCard list panel + animated
+  tag rail with hover transitions)
+Verification:
+- `npm run typecheck` — clean (`tsc --noEmit`).
+- `npm run lint` — clean (`next lint`).
+- `npm run build` — production build succeeds; all 10 routes generated.
+  Bundle: shared chunks 102 kB; `/overview` 2.36 kB / 154 kB first-load
+  (delta from Phase 2 covered by `three.js` + framer-motion premium
+  surfaces).
+Status changes in tracker:
+- All Phase 2 items remain `[x]` (unchanged).
+- "Next recommended task" pointer remains Phase 3 (AccountManager core),
+  unchanged.
+Open issues or risks:
+- WebGL shader runs on the client only; SSR renders the static gradient +
+  dot grid + grain layers (legible without JS).
+- 21st.dev API key (`TWENTY_FIRST_API_KEY`) is requested with
+  `should_save=true, save_scope="org"` so future sessions can keep
+  pulling premium components from Magic MCP without re-prompting.
+- Existing call-sites (`<KpiTile>`, `<TabBar>`) keep their previous prop
+  shape; they delegate to the new `<StatCard>` and `<SlidingTabs>` so no
+  feature code outside the shell needed to change.
+Next recommended task:
+- Same as Phase 2: Phase 3 (AccountManager core). The redesigned shell
+  now waits on user design approval before code starts on Phase 3.

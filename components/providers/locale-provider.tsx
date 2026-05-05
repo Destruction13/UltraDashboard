@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 import { LOCALE_COOKIE } from "@/lib/i18n/cookie-client";
@@ -21,16 +22,23 @@ export function LocaleProvider({
   initialLocale: Locale;
   children: ReactNode;
 }) {
+  const router = useRouter();
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    if (typeof document !== "undefined") {
-      // 1 year, scoped to whole site. The shell respects this on the next request.
-      document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-      document.documentElement.lang = next;
-    }
-  }, []);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      setLocaleState(next);
+      if (typeof document !== "undefined") {
+        // 1 year, scoped to whole site. The shell respects this on the next request.
+        document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+        document.documentElement.lang = next;
+      }
+      // Force a server-component refresh so SSR-rendered text picks up the new
+      // cookie immediately. Without this, only client-side text re-renders.
+      router.refresh();
+    },
+    [router],
+  );
 
   const value = useMemo<LocaleContextValue>(
     () => ({ locale, setLocale, t: getShellDictionary(locale) }),
