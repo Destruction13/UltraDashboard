@@ -42,3 +42,6 @@ next-env.d.ts
 
 # misc
 *.pem
+
+# local design proofs (uploaded as PR attachments only)
+.design-snapshots/

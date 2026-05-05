@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 
 import { EmptyState } from "@/components/shell/empty-state";
 import { GlassPanel } from "@/components/shell/glass-panel";
+import { GlowCard } from "@/components/shell/glow-card";
 import { PhaseTag } from "@/components/shell/phase-tag";
 import { SectionHeader } from "@/components/shell/section-header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { readLocaleFromCookies } from "@/lib/i18n/cookie";
 import { getShellDictionary } from "@/lib/i18n/dictionaries";
 
@@ -64,8 +65,8 @@ export default async function FamilyPage({
   const familyName = shell.family[family];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,300px)]">
-      <GlassPanel className="flex flex-col gap-5 p-6 sm:p-8">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+      <GlowCard innerClassName="flex flex-col gap-5 p-7 sm:p-9">
         <SectionHeader
           eyebrow={`${copy.eyebrow} · ${copy.descriptionPrefix} ${familyName}`}
           title={copy.listTitle}
@@ -88,7 +89,7 @@ export default async function FamilyPage({
             placeholder={copy.searchPlaceholder}
             disabled
             aria-disabled
-            className="w-full rounded-md border border-border/60 bg-background/40 py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl border border-[hsl(var(--glass-stroke)/0.55)] bg-[hsl(var(--card)/0.55)] py-2.5 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
@@ -102,7 +103,7 @@ export default async function FamilyPage({
             description={copy.listEmptyHint}
           />
         </div>
-      </GlassPanel>
+      </GlowCard>
 
       <GlassPanel className="flex flex-col gap-3 p-6 lg:sticky lg:top-24 lg:self-start">
         <SectionHeader
@@ -122,11 +123,13 @@ export default async function FamilyPage({
           ].map((slug) => (
             <li
               key={slug}
-              className="flex items-center justify-between rounded-md border border-border/50 bg-background/40 px-3 py-2 text-xs"
+              className="group flex items-center justify-between rounded-md border border-[hsl(var(--glass-stroke)/0.5)] bg-[hsl(var(--card)/0.45)] px-3 py-2 text-xs transition-colors duration-300 hover:border-[hsl(var(--glass-stroke)/0.9)] hover:bg-[hsl(var(--card)/0.65)]"
             >
               <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <Tag className="h-3.5 w-3.5" />
-                <span className="font-medium text-foreground/80">{slug}</span>
+                <Tag className="h-3.5 w-3.5 transition-colors duration-300 group-hover:text-foreground" />
+                <span className="font-medium text-foreground/80 transition-colors duration-300 group-hover:text-foreground">
+                  {slug}
+                </span>
               </span>
               <Skeleton className="h-2 w-10" />
             </li>
@@ -139,9 +142,9 @@ export default async function FamilyPage({
 
 function RowSkeleton() {
   return (
-    <div className="flex items-center justify-between rounded-md border border-border/50 bg-background/40 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-[hsl(var(--glass-stroke)/0.5)] bg-[hsl(var(--card)/0.4)] px-4 py-3 transition-colors duration-300 hover:border-[hsl(var(--glass-stroke)/0.85)]">
       <div className="flex items-center gap-3">
-        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-9 w-9 rounded-full" />
         <div className="grid gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-2.5 w-20" />

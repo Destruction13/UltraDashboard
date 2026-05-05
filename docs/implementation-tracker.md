@@ -330,3 +330,67 @@ Next recommended task:
   build the linked-service detail card using `<TwoColumnDetail>` (left =
   credentials, right = `instruction_documents.content_json` rendered into
   the Phase 4 roadmap blocks).
+
+#### May 5, 2026 (Phase 2.1 design rework with 21st.dev / Magic MCP)
+
+Date: May 5, 2026
+Owner: Devin (Claude)
+Focus: Phase 2.1 — premium design rework using real 21st.dev / Magic MCP
+inspiration blocks (per user feedback: hand-rolled shadcn glass scored 2/10).
+Files changed:
+- `package.json` (added `three`, `framer-motion`, `@types/three`)
+- `components/shell/shader-canvas.tsx` (new — WebGL aurora shader, adapted
+  from 21st.dev "Animated Shader Background"; tuned for dashboard with
+  slower drift, lower amplitude, theme-token-driven palette,
+  `prefers-reduced-motion` and visibility-pause guards)
+- `components/shell/glow-card.tsx` (new — mouse-tracking gradient halo +
+  hover scale, adapted from 21st.dev "Animated Card")
+- `components/shell/stat-card.tsx` (new — moving halo + rotating ray +
+  text-shadow pulse on the value, adapted from 21st.dev "Stat Card")
+- `components/shell/sliding-tabs.tsx` (new — animated indicator with
+  framer-motion spring + glow blur layer; adapted from 21st.dev
+  "Sliding Tabs", driven by `usePathname()` and Next.js `<Link>`)
+- `components/shell/animated-button.tsx` (new — motion variants + shimmer
+  pass + magnetic glow, adapted from 21st.dev "Animated Gradient Button")
+- `components/shell/scroll-reveal.tsx` (new — Apple-style fade + lift on
+  viewport entry, honours `prefers-reduced-motion`)
+- `components/shell/shader-background.tsx` (now layers WebGL canvas on top
+  of the CSS gradients + masked dot grid + grain)
+- `components/shell/top-nav.tsx` (tube-light layoutId indicator + brand
+  badge hover-glow)
+- `components/shell/page-shell.tsx` (gradient title clip + scroll-reveal
+  on header + content; new optional `hero` slot)
+- `components/shell/kpi-tile.tsx` (now a thin compatibility wrapper that
+  renders `<StatCard>`, exposes `tone` prop)
+- `components/shell/tab-bar.tsx` (now a thin compatibility wrapper that
+  renders `<SlidingTabs>`)
+- `app/overview/page.tsx` (StatCard tones + GlowCard module navigators
+  with mouse-tracked halo + scroll-reveal sections)
+- `app/omniroute/page.tsx` (StatCard tones + GlowCard skeleton modules
+  with hover lift + scroll-reveal)
+- `app/account-manager/layout.tsx` (gradient title + scroll-reveal stages)
+- `app/account-manager/[family]/page.tsx` (GlowCard list panel + animated
+  tag rail with hover transitions)
+Verification:
+- `npm run typecheck` — clean (`tsc --noEmit`).
+- `npm run lint` — clean (`next lint`).
+- `npm run build` — production build succeeds; all 10 routes generated.
+  Bundle: shared chunks 102 kB; `/overview` 2.36 kB / 154 kB first-load
+  (delta from Phase 2 covered by `three.js` + framer-motion premium
+  surfaces).
+Status changes in tracker:
+- All Phase 2 items remain `[x]` (unchanged).
+- "Next recommended task" pointer remains Phase 3 (AccountManager core),
+  unchanged.
+Open issues or risks:
+- WebGL shader runs on the client only; SSR renders the static gradient +
+  dot grid + grain layers (legible without JS).
+- 21st.dev API key (`TWENTY_FIRST_API_KEY`) is requested with
+  `should_save=true, save_scope="org"` so future sessions can keep
+  pulling premium components from Magic MCP without re-prompting.
+- Existing call-sites (`<KpiTile>`, `<TabBar>`) keep their previous prop
+  shape; they delegate to the new `<StatCard>` and `<SlidingTabs>` so no
+  feature code outside the shell needed to change.
+Next recommended task:
+- Same as Phase 2: Phase 3 (AccountManager core). The redesigned shell
+  now waits on user design approval before code starts on Phase 3.

@@ -1,15 +1,17 @@
 import { cn } from "@/lib/cn";
 
+import { ShaderCanvas } from "./shader-canvas";
+
 /**
  * Ambient shader-backed atmosphere.
  *
- * V1 keeps the implementation CSS-only so it stays fast on the VPS and doesn't
- * require client JS or WebGL. Layered radial gradients use theme tokens so the
- * effect adapts to dark/light mode automatically. Slow drift via an
- * `aurora-drift` animation that respects `prefers-reduced-motion`. SVG film
- * grain on top adds the premium dust look. This is the foundation we can
- * later swap for a real WebGL or Magic-MCP shader without touching the rest of
- * the shell.
+ * Sits behind the rest of the shell. Three layers:
+ *   1. Theme-aware radial gradients (CSS) — always rendered, drives the base
+ *      mood and gives a graceful no-JS / SSR fallback.
+ *   2. WebGL aurora canvas (client only, opt-out on `prefers-reduced-motion`).
+ *   3. SVG film grain on top — adds the premium dust look.
+ *
+ * Token-driven so the palette responds to dark/light theme switches.
  */
 export function ShaderBackground({ className }: { className?: string }) {
   return (
@@ -52,8 +54,25 @@ export function ShaderBackground({ className }: { className?: string }) {
         />
       </div>
 
+      {/* WebGL aurora layer — adds living colour without dominating the page. */}
+      <ShaderCanvas className="opacity-70 mix-blend-screen dark:mix-blend-screen" intensity={0.55} />
+
       {/* Top horizon line that anchors the navigation. */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-glass-stroke/60 to-transparent" />
+
+      {/* Subtle dot grid pattern — gives the dashboard ground. */}
+      <div
+        className="absolute inset-0 opacity-[0.06] dark:opacity-[0.10]"
+        style={{
+          backgroundImage:
+            "radial-gradient(hsl(var(--foreground) / 0.7) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+          maskImage:
+            "radial-gradient(ellipse at 50% 0%, black 50%, transparent 85%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at 50% 0%, black 50%, transparent 85%)",
+        }}
+      />
 
       {/* Subtle film grain via SVG noise — adds the premium dust look. */}
       <svg className="absolute inset-0 h-full w-full opacity-[0.04] mix-blend-overlay">

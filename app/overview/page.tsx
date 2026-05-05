@@ -1,6 +1,6 @@
 import {
   Activity,
-  ChevronRight,
+  ArrowRight,
   Cpu,
   Database,
   Globe2,
@@ -13,9 +13,11 @@ import Link from "next/link";
 
 import { EmptyState } from "@/components/shell/empty-state";
 import { GlassPanel } from "@/components/shell/glass-panel";
+import { GlowCard } from "@/components/shell/glow-card";
 import { KpiTile } from "@/components/shell/kpi-tile";
 import { PageShell } from "@/components/shell/page-shell";
 import { PhaseTag } from "@/components/shell/phase-tag";
+import { ScrollReveal } from "@/components/shell/scroll-reveal";
 import { SectionHeader } from "@/components/shell/section-header";
 import { Badge } from "@/components/ui/badge";
 import { readLocaleFromCookies } from "@/lib/i18n/cookie";
@@ -101,66 +103,76 @@ export default async function OverviewPage() {
         </Badge>
       }
     >
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile
-          label={copy.kpis.families.label}
-          value="3"
-          hint={copy.kpis.families.hint}
-          icon={<Database className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label={copy.kpis.roots.label}
-          loading
-          hint={copy.kpis.roots.hint}
-          icon={<Users className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label={copy.kpis.services.label}
-          loading
-          hint={copy.kpis.services.hint}
-          icon={<Cpu className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label={copy.kpis.sync.label}
-          loading
-          hint={copy.kpis.sync.hint}
-          icon={<Activity className="h-3.5 w-3.5" />}
-        />
-      </section>
+      <div className="flex flex-col gap-8">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiTile
+            label={copy.kpis.families.label}
+            value="3"
+            hint={copy.kpis.families.hint}
+            icon={<Database />}
+            tone="brand"
+          />
+          <KpiTile
+            label={copy.kpis.roots.label}
+            loading
+            hint={copy.kpis.roots.hint}
+            icon={<Users />}
+            tone="violet"
+          />
+          <KpiTile
+            label={copy.kpis.services.label}
+            loading
+            hint={copy.kpis.services.hint}
+            icon={<Cpu />}
+            tone="sky"
+          />
+          <KpiTile
+            label={copy.kpis.sync.label}
+            loading
+            hint={copy.kpis.sync.hint}
+            icon={<Activity />}
+            tone="emerald"
+          />
+        </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <ModuleCard
-          href="/omniroute"
-          icon={<Network className="h-5 w-5" />}
-          title={copy.modules.omniroute.title}
-          description={copy.modules.omniroute.description}
-          cta={copy.modules.omniroute.cta}
-        />
-        <ModuleCard
-          href="/account-manager"
-          icon={<Users className="h-5 w-5" />}
-          title={copy.modules.accountManager.title}
-          description={copy.modules.accountManager.description}
-          cta={copy.modules.accountManager.cta}
-        />
-      </section>
+        <ScrollReveal once distance={16}>
+          <section className="grid gap-5 lg:grid-cols-2">
+            <ModuleCard
+              href="/omniroute"
+              icon={<Network className="h-5 w-5" />}
+              title={copy.modules.omniroute.title}
+              description={copy.modules.omniroute.description}
+              cta={copy.modules.omniroute.cta}
+            />
+            <ModuleCard
+              href="/account-manager"
+              icon={<Users className="h-5 w-5" />}
+              title={copy.modules.accountManager.title}
+              description={copy.modules.accountManager.description}
+              cta={copy.modules.accountManager.cta}
+            />
+          </section>
+        </ScrollReveal>
 
-      <GlassPanel className="flex flex-col gap-4 p-6">
-        <SectionHeader
-          eyebrow={copy.instructionsTag}
-          title={copy.instructionsTitle}
-          actions={<PhaseTag>{copy.instructionsTag}</PhaseTag>}
-        />
-        <EmptyState
-          icon={<Sparkles className="h-4 w-4" />}
-          title={shell.states.empty}
-          description={copy.instructionsHint}
-        />
-      </GlassPanel>
+        <ScrollReveal once distance={16}>
+          <GlassPanel className="flex flex-col gap-4 p-6 sm:p-8">
+            <SectionHeader
+              eyebrow={copy.instructionsTag}
+              title={copy.instructionsTitle}
+              actions={<PhaseTag>{copy.instructionsTag}</PhaseTag>}
+            />
+            <EmptyState
+              icon={<Sparkles className="h-4 w-4" />}
+              title={shell.states.empty}
+              description={copy.instructionsHint}
+            />
+          </GlassPanel>
+        </ScrollReveal>
 
-      <p className="text-center text-xs text-muted-foreground">
-        <Globe2 className="mr-1 inline h-3 w-3" /> {shell.brand.tagline}
-      </p>
+        <p className="text-center text-xs text-muted-foreground">
+          <Globe2 className="mr-1 inline h-3 w-3" /> {shell.brand.tagline}
+        </p>
+      </div>
     </PageShell>
   );
 }
@@ -181,21 +193,27 @@ function ModuleCard({
   return (
     <Link
       href={href}
-      className="group relative block rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="group block rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <GlassPanel className="flex h-full flex-col gap-4 p-6 transition-transform duration-300 group-hover:-translate-y-0.5">
+      <GlowCard withArrow className="h-full" innerClassName="flex h-full flex-col gap-5">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--shader-a)/0.85)] via-[hsl(var(--shader-b)/0.8)] to-[hsl(var(--shader-c)/0.85)] text-primary-foreground shadow-glass">
-            {icon}
+          <span className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[hsl(var(--shader-a)/0.95)] via-[hsl(var(--shader-b)/0.9)] to-[hsl(var(--shader-c)/0.95)] text-primary-foreground shadow-[0_18px_48px_-24px_hsl(var(--shader-a)/0.8)]">
+            <span
+              aria-hidden
+              className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,hsl(var(--glass-highlight)/0.8),transparent_60%)]"
+            />
+            <span className="relative">{icon}</span>
           </span>
-          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            {title}
+          </h2>
         </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-        <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-foreground/80 transition-colors group-hover:text-foreground">
+        <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
+        <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-foreground/85 transition-colors group-hover:text-foreground">
           {cta}
-          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
         </span>
-      </GlassPanel>
+      </GlowCard>
     </Link>
   );
 }
