@@ -33,6 +33,14 @@
     --shader-a: 230 90% 70%;
     --shader-b: 280 80% 70%;
     --shader-c: 200 90% 70%;
+
+    /* Tag color tokens. Pair with foreground for text. */
+    --tag-default: 220 13% 86%;
+    --tag-violet: 268 80% 70%;
+    --tag-amber: 36 92% 60%;
+    --tag-emerald: 152 65% 50%;
+    --tag-rose: 350 85% 65%;
+    --tag-sky: 200 90% 65%;
   }
 
   .dark {
@@ -64,6 +72,14 @@
     --shader-a: 235 90% 60%;
     --shader-b: 285 80% 55%;
     --shader-c: 195 90% 50%;
+
+    /* Tag color tokens — dark variants. */
+    --tag-default: 226 24% 28%;
+    --tag-violet: 268 80% 65%;
+    --tag-amber: 36 92% 60%;
+    --tag-emerald: 152 65% 55%;
+    --tag-rose: 350 85% 65%;
+    --tag-sky: 200 90% 65%;
   }
 
   * {
@@ -92,6 +108,10 @@
 }
 
 @layer components {
+  /* -------------------------------------------------------------------- */
+  /*  Glass panel primitive                                                */
+  /* -------------------------------------------------------------------- */
+
   .glass-panel {
     @apply relative rounded-[var(--radius)] border bg-[hsl(var(--glass)/0.6)] backdrop-blur-xl;
     border-color: hsl(var(--glass-stroke) / 0.6);
@@ -112,7 +132,97 @@
     );
   }
 
+  /* Slim variant — used for inline rails (TabBar, badges, footers). */
+  .glass-panel--rail {
+    @apply rounded-[calc(var(--radius)-2px)];
+    box-shadow:
+      0 1px 0 0 hsl(var(--glass-highlight) / 0.4) inset,
+      0 12px 36px -24px hsl(var(--shader-a) / 0.35);
+  }
+
+  /* -------------------------------------------------------------------- */
+  /*  Aurora seam — sits under the top navigation as a soft horizon line   */
+  /* -------------------------------------------------------------------- */
+
+  .aurora-seam {
+    @apply pointer-events-none absolute inset-x-0 -bottom-px h-px opacity-80;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--shader-a) / 0.5) 25%,
+      hsl(var(--shader-b) / 0.55) 50%,
+      hsl(var(--shader-c) / 0.5) 75%,
+      transparent 100%
+    );
+  }
+
+  /* -------------------------------------------------------------------- */
+  /*  Shimmer skeleton primitive                                           */
+  /* -------------------------------------------------------------------- */
+
+  .shimmer-bar {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--foreground) / 0.04) 0%,
+      hsl(var(--foreground) / 0.1) 50%,
+      hsl(var(--foreground) / 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer-bar {
+      animation: none;
+      background: hsl(var(--foreground) / 0.06);
+    }
+  }
+
+  /* -------------------------------------------------------------------- */
+  /*  Aurora drift — slow large-scale movement on the shader layer         */
+  /* -------------------------------------------------------------------- */
+
+  .aurora-drift {
+    animation: aurora-drift 36s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-drift {
+      animation: none;
+    }
+  }
+
+  /* -------------------------------------------------------------------- */
+  /*  Misc utility classes                                                 */
+  /* -------------------------------------------------------------------- */
+
   .text-balance {
     text-wrap: balance;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.4);
+    border-radius: 8px;
+  }
+}
+
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -1%, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(-2%, 1%, 0) scale(1);
   }
 }

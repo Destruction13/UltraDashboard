@@ -27,48 +27,59 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4 sm:px-6">
-      <div className="glass-panel mx-auto flex h-14 max-w-[1400px] items-center gap-4 px-4">
-        <Link href="/overview" className="group flex items-center gap-2.5">
-          <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--shader-a))] via-[hsl(var(--shader-b))] to-[hsl(var(--shader-c))] text-primary-foreground shadow-glass">
-            <Sparkles className="h-4 w-4" />
-          </span>
-          <span className="flex flex-col leading-none">
-            <span className="text-sm font-semibold tracking-tight text-foreground">
-              {t.brand.name}
+      <div className="relative">
+        <div className="glass-panel mx-auto flex h-14 max-w-[1400px] items-center gap-4 px-4">
+          <Link href="/overview" className="group flex items-center gap-2.5">
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--shader-a))] via-[hsl(var(--shader-b))] to-[hsl(var(--shader-c))] text-primary-foreground shadow-glass">
+              <Sparkles className="h-4 w-4" />
             </span>
-            <span className="hidden text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:inline">
-              V1
+            <span className="flex flex-col leading-none">
+              <span className="text-sm font-semibold tracking-tight text-foreground">
+                {t.brand.name}
+              </span>
+              <span className="hidden text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:inline">
+                V1
+              </span>
             </span>
-          </span>
-        </Link>
+          </Link>
 
-        <nav className="ml-2 flex items-center gap-1" aria-label="Primary">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "group inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-foreground/5 text-foreground"
-                    : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
-                )}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{t.nav[item.labelKey]}</span>
-              </Link>
-            );
-          })}
-        </nav>
+          <nav className="ml-2 flex items-center gap-1" aria-label="Primary">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active =
+                pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "group relative inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
+                    active
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {active ? (
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 -z-[0] rounded-md bg-foreground/5 ring-1 ring-inset ring-border/60"
+                    />
+                  ) : null}
+                  <Icon className="relative h-4 w-4" />
+                  <span className="relative hidden sm:inline">{t.nav[item.labelKey]}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-        <div className="ml-auto flex items-center gap-1">
-          <LocaleToggle />
-          <ThemeToggle />
+          <div className="ml-auto flex items-center gap-1">
+            <LocaleToggle />
+            <ThemeToggle />
+          </div>
         </div>
+        {/* Aurora seam under the nav anchors the premium horizon line. */}
+        <div className="aurora-seam mx-4 sm:mx-6" />
       </div>
     </header>
   );

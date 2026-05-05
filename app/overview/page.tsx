@@ -1,7 +1,23 @@
-import { ChevronRight, Network, Sparkles, Users } from "lucide-react";
+import {
+  Activity,
+  ChevronRight,
+  Cpu,
+  Database,
+  Globe2,
+  Network,
+  Shield,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 
+import { EmptyState } from "@/components/shell/empty-state";
 import { GlassPanel } from "@/components/shell/glass-panel";
+import { KpiTile } from "@/components/shell/kpi-tile";
+import { PageShell } from "@/components/shell/page-shell";
+import { PhaseTag } from "@/components/shell/phase-tag";
+import { SectionHeader } from "@/components/shell/section-header";
+import { Badge } from "@/components/ui/badge";
 import { readLocaleFromCookies } from "@/lib/i18n/cookie";
 import { getShellDictionary } from "@/lib/i18n/dictionaries";
 
@@ -10,7 +26,13 @@ const COPY = {
     eyebrow: "Phase 0 · фундамент",
     headline: "Премиум-панель для OmniRoute и AccountManager",
     description:
-      "Это стартовый экран. Полный набор виджетов появится по мере выполнения Phase 1–6 трекера: счётчики семейств, статус последней синхронизации OmniRoute, туннель и закреплённые инструкции.",
+      "Стартовый экран. Полный набор виджетов появится по мере выполнения Phase 1–6 трекера: счётчики семейств, статус последней синхронизации OmniRoute, туннель и закреплённые инструкции.",
+    kpis: {
+      families: { label: "Семейства", hint: "GitHub · Google · Zoho" },
+      roots: { label: "Root-аккаунты", hint: "Появится после Phase 3" },
+      services: { label: "Связанные сервисы", hint: "Появится после Phase 3" },
+      sync: { label: "Последняя синхронизация", hint: "Появится после Phase 5" },
+    },
     modules: {
       omniroute: {
         title: "OmniRoute",
@@ -25,20 +47,22 @@ const COPY = {
         cta: "Открыть AccountManager",
       },
     },
-    placeholders: {
-      lastSync: "Последняя синхронизация OmniRoute",
-      lastSyncEmpty: "Появится после Phase 5",
-      counts: "Счётчики аккаунтов по семействам",
-      countsEmpty: "Появятся после Phase 1",
-      tunnel: "Туннель и эндпоинт",
-      tunnelEmpty: "Появятся после Phase 6",
-    },
+    instructionsTitle: "Закреплённые инструкции",
+    instructionsHint:
+      "Сюда попадут самые свежие инструкции по аккаунтам. Появятся в Phase 4 после рендера роадмапа.",
+    instructionsTag: "Phase 4",
   },
   en: {
     eyebrow: "Phase 0 · foundation",
     headline: "Premium control panel for OmniRoute and AccountManager",
     description:
-      "This is the starter overview. Full widgets land as Phase 1–6 of the tracker ships: family counts, last OmniRoute sync, tunnel context, and pinned guidance blocks.",
+      "Starter overview. Full widgets land as Phase 1–6 of the tracker ships: family counts, last OmniRoute sync, tunnel context, and pinned guidance blocks.",
+    kpis: {
+      families: { label: "Service families", hint: "GitHub · Google · Zoho" },
+      roots: { label: "Root accounts", hint: "Lands in Phase 3" },
+      services: { label: "Linked services", hint: "Lands in Phase 3" },
+      sync: { label: "Last sync", hint: "Lands in Phase 5" },
+    },
     modules: {
       omniroute: {
         title: "OmniRoute",
@@ -53,14 +77,10 @@ const COPY = {
         cta: "Open AccountManager",
       },
     },
-    placeholders: {
-      lastSync: "Last OmniRoute sync",
-      lastSyncEmpty: "Lands in Phase 5",
-      counts: "Account counts per family",
-      countsEmpty: "Lands in Phase 1",
-      tunnel: "Tunnel and endpoint",
-      tunnelEmpty: "Lands in Phase 6",
-    },
+    instructionsTitle: "Pinned instructions",
+    instructionsHint:
+      "Latest account instructions will surface here once the roadmap renderer ships in Phase 4.",
+    instructionsTag: "Phase 4",
   },
 } as const;
 
@@ -70,32 +90,45 @@ export default async function OverviewPage() {
   const copy = COPY[locale];
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in">
-      <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <GlassPanel className="p-8">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
-            {copy.eyebrow}
-          </div>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            {copy.headline}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            {copy.description}
-          </p>
-        </GlassPanel>
-
-        <GlassPanel className="flex flex-col justify-center gap-3 p-8">
-          <PlaceholderRow
-            label={copy.placeholders.lastSync}
-            empty={copy.placeholders.lastSyncEmpty}
-          />
-          <PlaceholderRow label={copy.placeholders.counts} empty={copy.placeholders.countsEmpty} />
-          <PlaceholderRow label={copy.placeholders.tunnel} empty={copy.placeholders.tunnelEmpty} />
-        </GlassPanel>
+    <PageShell
+      eyebrow={copy.eyebrow}
+      title={copy.headline}
+      description={copy.description}
+      actions={
+        <Badge variant="violet" className="hidden sm:inline-flex">
+          <Shield className="h-3 w-3" />
+          {shell.copy.perimeterTrust}
+        </Badge>
+      }
+    >
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile
+          label={copy.kpis.families.label}
+          value="3"
+          hint={copy.kpis.families.hint}
+          icon={<Database className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
+          label={copy.kpis.roots.label}
+          loading
+          hint={copy.kpis.roots.hint}
+          icon={<Users className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
+          label={copy.kpis.services.label}
+          loading
+          hint={copy.kpis.services.hint}
+          icon={<Cpu className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
+          label={copy.kpis.sync.label}
+          loading
+          hint={copy.kpis.sync.hint}
+          icon={<Activity className="h-3.5 w-3.5" />}
+        />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-2">
         <ModuleCard
           href="/omniroute"
           icon={<Network className="h-5 w-5" />}
@@ -112,19 +145,23 @@ export default async function OverviewPage() {
         />
       </section>
 
-      <p className="text-center text-xs text-muted-foreground">
-        <Sparkles className="mr-1 inline h-3 w-3" /> {shell.brand.tagline}
-      </p>
-    </div>
-  );
-}
+      <GlassPanel className="flex flex-col gap-4 p-6">
+        <SectionHeader
+          eyebrow={copy.instructionsTag}
+          title={copy.instructionsTitle}
+          actions={<PhaseTag>{copy.instructionsTag}</PhaseTag>}
+        />
+        <EmptyState
+          icon={<Sparkles className="h-4 w-4" />}
+          title={shell.states.empty}
+          description={copy.instructionsHint}
+        />
+      </GlassPanel>
 
-function PlaceholderRow({ label, empty }: { label: string; empty: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/40 px-3 py-2.5">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">{empty}</span>
-    </div>
+      <p className="text-center text-xs text-muted-foreground">
+        <Globe2 className="mr-1 inline h-3 w-3" /> {shell.brand.tagline}
+      </p>
+    </PageShell>
   );
 }
 
@@ -144,19 +181,19 @@ function ModuleCard({
   return (
     <Link
       href={href}
-      className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[var(--radius)]"
+      className="group relative block rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <GlassPanel className="h-full transition-transform duration-300 group-hover:-translate-y-0.5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--shader-a))] via-[hsl(var(--shader-b))] to-[hsl(var(--shader-c))] text-primary-foreground shadow-glass">
+      <GlassPanel className="flex h-full flex-col gap-4 p-6 transition-transform duration-300 group-hover:-translate-y-0.5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--shader-a)/0.85)] via-[hsl(var(--shader-b)/0.8)] to-[hsl(var(--shader-c)/0.85)] text-primary-foreground shadow-glass">
             {icon}
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          </span>
+          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         </div>
-        <h2 className="mt-5 text-xl font-semibold tracking-tight">{title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
-        <span className="mt-6 inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-primary">
-          {cta} <ChevronRight className="h-3 w-3" />
+        <p className="text-sm text-muted-foreground">{description}</p>
+        <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-foreground/80 transition-colors group-hover:text-foreground">
+          {cta}
+          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </span>
       </GlassPanel>
     </Link>
