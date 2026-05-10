@@ -1,0 +1,2 @@
+ALTER TABLE "linked_service_accounts" ADD COLUMN "vault_item_id" varchar(64);--> statement-breakpoint
+CREATE INDEX "linked_service_accounts_vault_item_idx" ON "linked_service_accounts" USING btree ("vault_item_id");

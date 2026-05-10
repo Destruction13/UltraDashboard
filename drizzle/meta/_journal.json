@@ -8,6 +8,13 @@
       "when": 1778001398758,
       "tag": "0000_0001_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778440046935,
+      "tag": "0001_add_vault_item_id",
+      "breakpoints": true
     }
   ]
 }
