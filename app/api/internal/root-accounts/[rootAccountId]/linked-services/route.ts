@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { isUuid } from "@/lib/account-manager/ids";
 import {
   createLinkedServiceAccount,
   getRootAccountDetail,
@@ -26,6 +27,13 @@ export async function POST(
   context: { params: Promise<{ rootAccountId: string }> },
 ) {
   const { rootAccountId } = await context.params;
+
+  if (!isUuid(rootAccountId)) {
+    return NextResponse.json(
+      { error: "POST only supports DB-backed root account IDs." },
+      { status: 400 },
+    );
+  }
 
   const root = await getRootAccountDetail(rootAccountId);
   if (!root) {

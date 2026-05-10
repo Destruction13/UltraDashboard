@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { upsertInstructionDocument } from "@/lib/account-manager/repository";
+import { isUuid } from "@/lib/account-manager/ids";
+import {
+  getLinkedServiceDetailById,
+  upsertInstructionDocument,
+} from "@/lib/account-manager/repository";
 import type { InstructionDocumentContent } from "@/lib/db/catalog";
 
 const contentSchema = z.object({
@@ -21,6 +25,13 @@ export async function PATCH(
 ) {
   const { accountId } = await context.params;
 
+  if (!isUuid(accountId)) {
+    return NextResponse.json(
+      { error: "PATCH only supports DB-backed linked service IDs." },
+      { status: 400 },
+    );
+  }
+
   let payload: unknown;
   try {
     payload = await request.json();
@@ -34,6 +45,11 @@ export async function PATCH(
       { error: "Invalid payload.", issues: parsed.error.flatten() },
       { status: 400 },
     );
+  }
+
+  const detail = await getLinkedServiceDetailById(accountId);
+  if (!detail) {
+    return NextResponse.json({ error: "Linked service account not found." }, { status: 404 });
   }
 
   const row = await upsertInstructionDocument({

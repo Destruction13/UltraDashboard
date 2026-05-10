@@ -23,6 +23,7 @@ import {
   SYNTHETIC_VAULTWARDEN_ROOT_ACCOUNT_ID,
   isFamilySlug,
 } from "@/lib/account-manager/families";
+import { isUuid } from "@/lib/account-manager/ids";
 import { getRootAccountDetail } from "@/lib/account-manager/repository";
 import { getVaultwardenRootAccountDetail } from "@/lib/account-manager/vaultwarden-bridge";
 import { LINKED_SERVICE_CATALOG } from "@/lib/db/catalog";
@@ -219,6 +220,8 @@ export default async function RootAccountDetailPage({
     return <BridgeRootView family={family} familyName={familyName} locale={locale} />;
   }
 
+  if (!isUuid(rootAccountId)) notFound();
+
   return (
     <DbRootView
       family={family}
@@ -241,7 +244,7 @@ async function DbRootView({
   locale: "ru" | "en";
 }) {
   const detail = await getRootAccountDetail(rootAccountId);
-  if (!detail) notFound();
+  if (!detail || detail.family.slug !== family) notFound();
   const copy = DB_COPY[locale];
 
   return (

@@ -129,6 +129,8 @@ const COPY = {
   },
 } as const;
 
+export const dynamic = "force-dynamic";
+
 function getStatusVariant(status: "online" | "offline" | "unconfigured") {
   if (status === "online") return "emerald" as const;
   if (status === "offline") return "rose" as const;
@@ -419,8 +421,4 @@ function StatusRow({ label, value }: { label: string; value: string }) {
       <span className="max-w-[180px] truncate font-mono text-[11px] text-foreground">{value}</span>
     </div>
   );
-}
-
-export function generateStaticParams() {
-  return FAMILY_SLUGS.map((slug) => ({ family: slug }));
 }

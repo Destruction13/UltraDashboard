@@ -26,6 +26,7 @@ import {
   isFamilySlug,
   type FamilySlug,
 } from "@/lib/account-manager/families";
+import { isUuid } from "@/lib/account-manager/ids";
 import {
   getLinkedServiceDetailById,
   type LinkedServiceDetail,
@@ -162,6 +163,8 @@ export default async function LinkedServiceDetailPage({
     );
   }
 
+  if (!isUuid(rootAccountId) || !isUuid(linkedServiceId)) notFound();
+
   return (
     <DbLinkedView
       family={family}
@@ -186,7 +189,9 @@ async function DbLinkedView({
   const familyName = shell.family[family];
 
   const detail = await getLinkedServiceDetailById(linkedServiceId);
-  if (!detail || detail.rootAccount.id !== rootAccountId) notFound();
+  if (!detail || detail.rootAccount.id !== rootAccountId || detail.family.slug !== family) {
+    notFound();
+  }
 
   const credentialHint =
     detail.resolved.source === "vaultwarden"
