@@ -27,6 +27,7 @@ The product docs are the source of truth — read them before changing scope.
 - `next-themes` for dark / light theme support
 - Bilingual shell (Russian / English) via a custom locale provider
 - Postgres for the dashboard-owned database (added in Phase 1)
+- Vaultwarden-backed secret access via localhost `bw serve`
 - Read-only SQLite adapter against OmniRoute's `storage.sqlite` (added in
   Phase 5)
 
@@ -38,6 +39,9 @@ npm install
 
 # 2. Copy and edit environment variables
 cp .env.example .env.local
+
+# Optional: point Vaultwarden env vars at the localhost bridge on your VPS
+# when you want live login / password / TOTP cards inside AccountManager.
 
 # 3. Start the dev server
 npm run dev
@@ -69,5 +73,7 @@ for the exact mount path and environment overrides.
 
 ## Status
 
-Phase 0 (foundation) is in progress. Live status lives in
+Phases 0-2 are complete. The repo now includes a live Vaultwarden vertical
+slice inside AccountManager, while broader AccountManager CRUD and OmniRoute
+data sync remain in progress. Live status lives in
 [`docs/implementation-tracker.md`](docs/implementation-tracker.md).

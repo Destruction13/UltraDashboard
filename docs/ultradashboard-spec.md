@@ -109,6 +109,22 @@ instead shows a tunnel information card with:
 - copy actions
 - related OmniRoute endpoint data
 
+### Secret source of truth
+
+UltraDashboard may maintain account metadata in its own Postgres database, but
+the preferred live source of truth for credentials is Vaultwarden when the
+Vaultwarden bridge is configured.
+
+The approved bridge shape is:
+
+- Vaultwarden stores the live login, password, login URL, and TOTP secret.
+- A localhost-only `bw serve` bridge exposes those records to UltraDashboard on
+  the same VPS.
+- UltraDashboard reads the current TOTP from that bridge at request time.
+
+This lets the UI show real credentials without forcing the happy path to copy
+live secrets into the dashboard database.
+
 ### Secrets visibility
 
 Secrets are visible directly in the account detail view. The card shows:
@@ -120,8 +136,10 @@ Secrets are visible directly in the account detail view. The card shows:
 - notes
 - service metadata
 
-The raw TOTP shared secret is stored by the product but is not displayed by
-default in the main presentation layer. The UI prioritizes current usable OTP.
+When Vaultwarden is enabled, the card reads those values from Vaultwarden
+through the local bridge. The raw TOTP shared secret is still not displayed by
+default in the main presentation layer. The UI prioritizes the current usable
+OTP.
 
 ### Detail layout
 
@@ -226,7 +244,7 @@ these capabilities in V1:
 - edit tags
 - edit notes
 - edit instructions
-- generate current TOTP code from stored secret
+- fetch the current TOTP code from the configured secret source
 
 ### Linked service account detail view
 
@@ -293,6 +311,12 @@ The product must optimize for fast use by people and agents.
 
 UltraDashboard must use its own Postgres database. It must not share write
 tables with OmniRoute.
+
+The current Phase 1 schema still contains plaintext secret columns from the
+original plan. When the Vaultwarden bridge is configured, the runtime may treat
+those columns as unused legacy fallback and read live secrets directly from
+Vaultwarden instead. A follow-up schema migration can replace that fallback
+with a first-class `vault_item_id` reference.
 
 ### Core entities
 
@@ -486,13 +510,14 @@ If a sync fails, the dashboard must:
 
 ## TOTP design
 
-UltraDashboard must implement built-in TOTP generation from stored shared
-secrets.
+UltraDashboard must return the current TOTP code through a server-side secret
+bridge.
 
 V1 requirements:
 
-- Store one shared secret per linked service account when needed.
-- Generate the current code server-side on demand.
+- Prefer Vaultwarden as the live source of truth for TOTP secrets when the
+  bridge is configured.
+- Generate or retrieve the current code server-side on demand.
 - Return the current code and expiry window to the UI.
 - Support agent access through the internal API.
 
@@ -641,6 +666,10 @@ The dashboard will need at least:
 - `OMNIROUTE_DISPLAY_ENDPOINT`
 - `OMNIROUTE_TUNNEL_INFO_JSON`
 - `SYNC_CRON_OR_INTERVAL`
+- `VAULTWARDEN_BASE_URL`
+- `VAULTWARDEN_INTERNAL_ACCESS_MODE`
+- `BW_SERVE_URL`
+- `VAULTWARDEN_TEST_ITEM_ID`
 - `DEFAULT_LOCALE`
 
 If a minimal auth layer is added later, it must use separate env keys.
@@ -653,7 +682,9 @@ decision.
 
 ### Accepted V1 posture
 
-- secrets stored in dashboard DB in plain form
+- live secrets may be resolved from a localhost-only Vaultwarden bridge
+- legacy plaintext secret columns may still exist in the dashboard DB until a
+  cleanup migration lands
 - no per-user auth model inside the app
 - no per-agent token model
 - access controlled by tunnel or perimeter only
@@ -666,6 +697,7 @@ decision.
 - never log passwords or TOTP secrets
 - keep OmniRoute adapter access read-only
 - keep UltraDashboard DB separate from OmniRoute DB
+- keep `bw serve` bound to localhost only
 
 ### Deferred hardening
 

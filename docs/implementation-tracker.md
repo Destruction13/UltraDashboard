@@ -18,7 +18,8 @@ Use the markers below consistently.
 The tracker follows the approved V1 spec. The current implementation strategy
 is to build UltraDashboard as a separate `Next.js` app with `TypeScript`,
 `shadcn/ui`, and Postgres, while reading OmniRoute through a read-only adapter
-against its local `storage.sqlite`.
+against its local `storage.sqlite` and resolving live secrets through a
+localhost-only Vaultwarden `bw serve` bridge.
 
 ## Phase checklist
 
@@ -57,19 +58,19 @@ This phase builds the product frame.
 
 This phase makes account operations usable.
 
-- [ ] Build family tabs for `GitHub`, `Google`, and `Zoho`.
-- [ ] Build root account list views.
-- [ ] Build root account detail views.
+- [x] Build family tabs for `GitHub`, `Google`, and `Zoho`.
+- [x] Build root account list views.
+- [x] Build root account detail views.
 - [ ] Build linked service account CRUD flows.
-- [ ] Add search and tag filtering.
+- [~] Add search and tag filtering.
 
 ### Phase 4: secrets and instructions
 
 This phase creates the main operational workflow.
 
-- [ ] Implement server-side TOTP generation.
-- [ ] Build the left credential panel with visible secrets and copy actions.
-- [ ] Build the right roadmap renderer.
+- [x] Implement server-side TOTP generation.
+- [x] Build the left credential panel with visible secrets and copy actions.
+- [x] Build the right roadmap renderer.
 - [ ] Add editing flows for notes and instruction content.
 
 ### Phase 5: OmniRoute integration
@@ -94,8 +95,8 @@ This phase turns synced data into usable product surfaces.
 
 This phase makes the dashboard automatable.
 
-- [ ] Add services and accounts listing endpoints.
-- [ ] Add full account card and TOTP endpoints.
+- [x] Add services and accounts listing endpoints.
+- [x] Add full account card and TOTP endpoints.
 - [ ] Add notes and instructions update endpoints.
 - [ ] Add OmniRoute summary, providers, and sync endpoints.
 
@@ -116,15 +117,12 @@ List real blockers here. Remove or update them when they are resolved.
 
 ## Next recommended task
 
-The next recommended task is **Phase 3: AccountManager core**. The shared
-layout primitives (`<PageShell>`, `<TwoColumnDetail>`, `<TabBar>`,
-`<KpiTile>`, `<EmptyState>`, `<SectionHeader>`, `<Skeleton>`, `<Badge>`,
-`<PhaseTag>`, `<Card>`) now exist on top of the data layer from Phase 1, so
-implementation of the AccountManager root-account list, family tabs, search,
-and tag filtering can start immediately. Begin with a server component on
-`/account-manager/[family]` that reads from the `root_accounts` and
-`linked_service_accounts` tables (joined to `service_families`), then wire
-the two-column detail card on a dynamic detail route.
+The next recommended task is **Vaultwarden-backed AccountManager persistence**.
+The app now has a working synthetic root-account flow, live item detail cards,
+copy actions, roadmap rendering, and internal API reads through `bw serve`.
+The next slice should replace the synthetic bridge-only listing with real
+dashboard-owned `root_accounts` and `linked_service_accounts` records that
+store `vault_item_id`, plus finish tag filtering and editing flows.
 
 ## Session log
 
@@ -394,3 +392,52 @@ Open issues or risks:
 Next recommended task:
 - Same as Phase 2: Phase 3 (AccountManager core). The redesigned shell
   now waits on user design approval before code starts on Phase 3.
+
+#### May 10, 2026 (Vaultwarden vertical slice)
+
+Date: May 10, 2026
+Owner: Codex
+Focus: Vaultwarden-first AccountManager integration through localhost
+`bw serve`, plus the first agent-facing API slice.
+Files changed:
+- `.env.example`, `README.md`
+- `app/account-manager/[family]/page.tsx`
+- `app/account-manager/[family]/[rootAccountId]/page.tsx`
+- `app/account-manager/[family]/[rootAccountId]/services/[linkedServiceId]/page.tsx`
+- `app/api/internal/services/route.ts`
+- `app/api/internal/services/[familySlug]/accounts/route.ts`
+- `app/api/internal/root-accounts/[rootAccountId]/route.ts`
+- `app/api/internal/linked-service-accounts/[accountId]/route.ts`
+- `app/api/internal/linked-service-accounts/[accountId]/totp/route.ts`
+- `components/account-manager/{copy-button,roadmap-renderer}.tsx`
+- `lib/account-manager/{families,vaultwarden-bridge}.ts`
+- `lib/vaultwarden/{config,client}.ts`
+- `docs/implementation-tracker.md`, `docs/ultradashboard-spec.md`
+Verification:
+- `npm run typecheck` — passes after `next build` refreshes `.next/types`.
+- `npm run lint` — passes.
+- `npm run build` — passes.
+Status changes in tracker:
+- Phase 3 family tabs, root list views, and root detail views marked `[x]`.
+- Phase 3 search and tag filtering marked `[~]` because search is live, while
+  tag filtering still waits on persistent account records.
+- Phase 4 TOTP generation, credential panel, and roadmap renderer marked `[x]`
+  through the Vaultwarden bridge-backed detail view.
+- Phase 7 services/accounts listing and full account card + TOTP endpoints
+  marked `[x]`.
+Open issues or risks:
+- The current AccountManager read path is intentionally synthetic: one
+  Vaultwarden bridge root account appears in every family tab until real
+  `root_accounts` / `linked_service_accounts` rows are bound to `vault_item_id`.
+- The approved V1 spec originally assumed plaintext secret columns in
+  Postgres. The runtime now prefers Vaultwarden as the live secret source, so
+  a follow-up schema migration is still needed to make the persistence model
+  match the bridge-backed implementation cleanly.
+- The Vaultwarden bridge depends on the bot account staying unlocked in the
+  VPS-local `bw serve` systemd service. If that bridge goes down, the detail
+  cards fall back to the configured/unconfigured states instead of exposing
+  stale secret copies.
+Next recommended task:
+- Persist real AccountManager entities with `vault_item_id`, finish tag
+  filtering, and add note/instruction editing flows on top of the new
+  Vaultwarden-first read path.
