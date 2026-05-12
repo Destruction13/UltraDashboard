@@ -25,6 +25,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .next-*.log
+vaultwarden-tunnel*.log
+next-dev*.log
+tmp-headless-*.png
+tmp-*.png
+.tmp-edge-profile/
 
 # debug
 .pnpm-debug.log*

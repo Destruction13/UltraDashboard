@@ -1,8 +1,10 @@
-import { ArrowRight, Database, ShieldCheck, TestTube2, Vault } from "lucide-react";
+import { ArrowRight, Database, Mail, ShieldCheck, TestTube2, UserRoundPlus, Vault } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 
+import { CreateLinkedServiceForm } from "@/components/account-manager/vaultwarden-forms";
 import { EmptyState } from "@/components/shell/empty-state";
 import { GlassPanel } from "@/components/shell/glass-panel";
 import { GlowCard } from "@/components/shell/glow-card";
@@ -16,22 +18,23 @@ import { getShellDictionary } from "@/lib/i18n/dictionaries";
 
 const COPY = {
   ru: {
-    eyebrow: "Vaultwarden bridge",
-    title: "Синтетический root-аккаунт",
+    eyebrow: "Vaultwarden root",
+    titlePrefix: "Root-аккаунт",
     description:
-      "Это live-мост к bot-vault через localhost-only bw serve. Ниже лежат реальные items, доступные UltraDashboard прямо сейчас.",
+      "Ниже лежат реальные linked service items из серверного Vaultwarden. Добавление новых записей идёт напрямую через bw serve.",
     cards: {
-      items: "Доступные items",
+      items: "Linked items",
       source: "Источник секретов",
       fixture: "Smoke fixture",
       mode: "Режим доступа",
     },
+    identityTitle: "Идентичность root-аккаунта",
     servicesTitle: "Linked service items",
     servicesHint:
-      "Пока collections не заведены, список не режется по family и показывает всё, что видно bot-аккаунту в Vaultwarden.",
-    emptyTitle: "В vault пока нет items",
+      "Каждая карточка ниже соответствует реальному Vaultwarden item. Изменения и новые записи сразу отражаются на сервере.",
+    emptyTitle: "У этого root-аккаунта пока нет items",
     emptyHint:
-      "Проверьте bot-аккаунт или создайте первую запись через Vaultwarden, после чего она появится здесь без дополнительного sync шага.",
+      "Создайте первую linked service запись ниже, и она сразу появится в этом списке без отдельного sync-шага.",
     openCta: "Открыть карточку",
     backCta: "Назад к family",
     fixtureTag: "Fixture",
@@ -47,24 +50,31 @@ const COPY = {
       offline: "Offline",
       unconfigured: "Не настроен",
     },
+    email: "Primary email",
+    username: "Username",
+    folder: "Vault folder",
+    createTitle: "Добавить новую запись",
+    createHint:
+      "Форма ниже создаёт новый linked service item и привязывает его к этому root-аккаунту на сервере.",
   },
   en: {
-    eyebrow: "Vaultwarden bridge",
-    title: "Synthetic root account",
+    eyebrow: "Vaultwarden root",
+    titlePrefix: "Root account",
     description:
-      "This is the live bridge to the bot vault through localhost-only bw serve. The cards below are real items UltraDashboard can already read.",
+      "The linked service items below are real server-side Vaultwarden entries. New records are added directly through bw serve.",
     cards: {
-      items: "Accessible items",
+      items: "Linked items",
       source: "Secret source",
       fixture: "Smoke fixture",
       mode: "Access mode",
     },
+    identityTitle: "Root identity",
     servicesTitle: "Linked service items",
     servicesHint:
-      "Until collections exist, the list is not split by family and shows everything visible to the bot account in Vaultwarden.",
-    emptyTitle: "No items in the vault yet",
+      "Each card below maps to a real Vaultwarden item. Changes and newly created records are reflected on the server immediately.",
+    emptyTitle: "This root account has no items yet",
     emptyHint:
-      "Check the bot account or create the first entry through Vaultwarden. It will appear here without a separate sync step.",
+      "Create the first linked service below and it will appear in this list without a separate sync step.",
     openCta: "Open card",
     backCta: "Back to family",
     fixtureTag: "Fixture",
@@ -80,6 +90,12 @@ const COPY = {
       offline: "Offline",
       unconfigured: "Unconfigured",
     },
+    email: "Primary email",
+    username: "Username",
+    folder: "Vault folder",
+    createTitle: "Add a new record",
+    createHint:
+      "The form below creates a new linked service item and attaches it to this root account on the server.",
   },
 } as const;
 
@@ -110,13 +126,11 @@ export default async function RootAccountDetailPage({
       <GlowCard innerClassName="flex flex-col gap-6 p-7 sm:p-9">
         <SectionHeader
           eyebrow={`${copy.eyebrow} · ${familyName}`}
-          title={copy.title}
+          title={detail.displayName}
           description={copy.description}
           actions={
             <>
-              <Badge variant={getStatusVariant(detail.status)}>
-                {copy.statuses[detail.status]}
-              </Badge>
+              <Badge variant={getStatusVariant(detail.status)}>{copy.statuses[detail.status]}</Badge>
               {detail.hasFixture ? <Badge variant="sky">{copy.fixtureTag}</Badge> : null}
               <Button asChild variant="outline">
                 <Link href={`/account-manager/${family}` as Route}>{copy.backCta}</Link>
@@ -132,6 +146,15 @@ export default async function RootAccountDetailPage({
           <MetricCard icon={<ShieldCheck className="h-4 w-4" />} label={copy.cards.mode} value={detail.bridgeMode} />
         </div>
       </GlowCard>
+
+      <GlassPanel className="flex flex-col gap-4 p-6 sm:p-7">
+        <SectionHeader title={copy.identityTitle} description={detail.description} />
+        <div className="grid gap-3 sm:grid-cols-3 text-sm">
+          <IdentityRow label={copy.email} value={detail.primaryEmail ?? "-"} icon={<Mail className="h-3.5 w-3.5" />} />
+          <IdentityRow label={copy.username} value={detail.username ?? "-"} icon={<Vault className="h-3.5 w-3.5" />} />
+          <IdentityRow label={copy.folder} value={detail.folderName ?? "-"} icon={<Database className="h-3.5 w-3.5" />} />
+        </div>
+      </GlassPanel>
 
       <GlassPanel className="flex flex-col gap-4 p-6 sm:p-7">
         <SectionHeader title={copy.servicesTitle} description={copy.servicesHint} />
@@ -182,11 +205,20 @@ export default async function RootAccountDetailPage({
           <EmptyState icon={<Vault className="h-4 w-4" />} title={copy.emptyTitle} description={detail.issue ?? copy.emptyHint} />
         )}
       </GlassPanel>
+
+      <GlassPanel className="flex flex-col gap-4 p-6 sm:p-7">
+        <SectionHeader
+          eyebrow={<UserRoundPlus className="h-3.5 w-3.5" />}
+          title={copy.createTitle}
+          description={copy.createHint}
+        />
+        <CreateLinkedServiceForm family={family} rootAccountId={detail.id} locale={locale} />
+      </GlassPanel>
     </div>
   );
 }
 
-function MetricCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-[hsl(var(--glass-stroke)/0.55)] bg-[hsl(var(--card)/0.42)] px-4 py-4">
       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--shader-a)/0.82)] via-[hsl(var(--shader-b)/0.82)] to-[hsl(var(--shader-c)/0.82)] text-primary-foreground shadow-[0_18px_48px_-28px_hsl(var(--shader-a)/0.8)]">
@@ -194,6 +226,26 @@ function MetricCard({ icon, label, value }: { icon: React.ReactNode; label: stri
       </div>
       <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function IdentityRow({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-background/35 px-4 py-3">
+      <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        {icon}
+        {label}
+      </div>
+      <div className="break-all font-mono text-[13px] text-foreground">{value}</div>
     </div>
   );
 }

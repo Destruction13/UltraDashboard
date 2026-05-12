@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -32,6 +32,12 @@ export function ScrollReveal({
   as = "div",
 }: ScrollRevealProps) {
   const reduceMotion = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const MotionTag = (() => {
     switch (as) {
       case "section":
@@ -45,7 +51,7 @@ export function ScrollReveal({
     }
   })();
 
-  if (reduceMotion) {
+  if (reduceMotion || !mounted) {
     const Tag = as;
     return <Tag className={className}>{children}</Tag>;
   }
