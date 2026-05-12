@@ -22,14 +22,23 @@ export type VaultwardenConfig = {
   issue: string | null;
 };
 
+function normalizeOptionalEnv(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export function getVaultwardenConfig(): VaultwardenConfig {
   const parsed = envSchema.safeParse({
-    VAULTWARDEN_BASE_URL: process.env.VAULTWARDEN_BASE_URL,
-    VAULTWARDEN_INTERNAL_ACCESS_MODE: process.env.VAULTWARDEN_INTERNAL_ACCESS_MODE,
-    BW_SERVE_URL: process.env.BW_SERVE_URL,
-    VAULTWARDEN_TEST_ITEM_ID: process.env.VAULTWARDEN_TEST_ITEM_ID,
-    VAULTWARDEN_ORG_ID: process.env.VAULTWARDEN_ORG_ID,
-    VAULTWARDEN_COLLECTION_IDS: process.env.VAULTWARDEN_COLLECTION_IDS,
+    VAULTWARDEN_BASE_URL: normalizeOptionalEnv(process.env.VAULTWARDEN_BASE_URL),
+    VAULTWARDEN_INTERNAL_ACCESS_MODE: normalizeOptionalEnv(process.env.VAULTWARDEN_INTERNAL_ACCESS_MODE),
+    BW_SERVE_URL: normalizeOptionalEnv(process.env.BW_SERVE_URL),
+    VAULTWARDEN_TEST_ITEM_ID: normalizeOptionalEnv(process.env.VAULTWARDEN_TEST_ITEM_ID),
+    VAULTWARDEN_ORG_ID: normalizeOptionalEnv(process.env.VAULTWARDEN_ORG_ID),
+    VAULTWARDEN_COLLECTION_IDS: normalizeOptionalEnv(process.env.VAULTWARDEN_COLLECTION_IDS),
   });
 
   if (!parsed.success) {

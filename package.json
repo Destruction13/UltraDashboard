@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/db/migrate.ts",
     "db:seed": "tsx scripts/db/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "tunnel:vaultwarden": "python scripts/dev/vaultwarden_tunnel.py"
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.2",

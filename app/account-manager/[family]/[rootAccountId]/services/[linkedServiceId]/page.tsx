@@ -9,8 +9,10 @@ import {
 import type { Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { CopyButton } from "@/components/account-manager/copy-button";
+import { EditLinkedServiceForm } from "@/components/account-manager/vaultwarden-forms";
 import { RoadmapRenderer } from "@/components/account-manager/roadmap-renderer";
 import { GlassPanel } from "@/components/shell/glass-panel";
 import { SectionHeader } from "@/components/shell/section-header";
@@ -26,10 +28,12 @@ const COPY = {
   ru: {
     credentialTitle: "Учётные данные",
     credentialHint:
-      "Эти значения читаются из Vaultwarden через bw serve на VPS. Ничего не копируется в клиентский код заранее.",
+      "Эти значения читаются напрямую из Vaultwarden через bw serve на VPS. Изменения ниже тоже записываются обратно в тот же серверный vault.",
     actionsTitle: "Быстрые действия",
     metadataTitle: "Метаданные",
     notesTitle: "Заметки",
+    editTitle: "Редактирование",
+    editHint: "Изменяйте поля здесь, чтобы обновить item прямо на сервере.",
     username: "Логин / email",
     password: "Пароль",
     totp: "Текущий TOTP",
@@ -49,10 +53,12 @@ const COPY = {
   en: {
     credentialTitle: "Credentials",
     credentialHint:
-      "These values are read from Vaultwarden through bw serve on the VPS. Nothing is pre-baked into the client bundle.",
+      "These values are read directly from Vaultwarden through bw serve on the VPS. The edit form below writes changes back into the same server-side vault.",
     actionsTitle: "Quick actions",
     metadataTitle: "Metadata",
     notesTitle: "Notes",
+    editTitle: "Edit entry",
+    editHint: "Change the fields here to update the item directly on the server.",
     username: "Login / email",
     password: "Password",
     totp: "Current TOTP",
@@ -192,9 +198,35 @@ export default async function LinkedServiceDetailPage({
                 </div>
               </GlassPanel>
             ) : null}
+
+            <GlassPanel className="flex flex-col gap-4 p-6 sm:p-7">
+              <SectionHeader title={copy.editTitle} description={copy.editHint} />
+              <EditLinkedServiceForm
+                family={family}
+                rootAccountId={detail.rootAccountId}
+                accountId={detail.id}
+                locale={locale}
+                initial={{
+                  title: detail.title,
+                  serviceSlug: detail.serviceSlug,
+                  serviceName: detail.serviceName,
+                  loginOrEmail: detail.username ?? "",
+                  password: detail.password ?? "",
+                  totpSecret: "",
+                  loginUrl: detail.loginUrl ?? "",
+                  notes: detail.notes ?? "",
+                }}
+              />
+            </GlassPanel>
           </>
         }
-        right={<RoadmapRenderer title={detail.instructionTitle} summary={detail.instructionSummary} content={detail.instructionContent} />}
+        right={
+          <RoadmapRenderer
+            title={detail.instructionTitle}
+            summary={detail.instructionSummary}
+            content={detail.instructionContent}
+          />
+        }
       />
     </div>
   );
@@ -211,7 +243,7 @@ function CredentialRow({
   linkValue,
   linkLabel,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string | null;
   copyLabel: string;
@@ -252,7 +284,7 @@ function CredentialRow({
   );
 }
 
-function MetadataRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+function MetadataRow({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/35 px-3 py-2 text-sm">
       <span className="inline-flex items-center gap-2 text-muted-foreground">

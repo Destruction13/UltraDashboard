@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { SYNTHETIC_VAULTWARDEN_ROOT_ACCOUNT_ID } from "@/lib/account-manager/families";
 import { getVaultwardenLinkedServiceDetail } from "@/lib/account-manager/vaultwarden-bridge";
 
 export async function GET(
@@ -8,10 +7,7 @@ export async function GET(
   context: { params: Promise<{ accountId: string }> },
 ) {
   const { accountId } = await context.params;
-  const detail = await getVaultwardenLinkedServiceDetail(
-    SYNTHETIC_VAULTWARDEN_ROOT_ACCOUNT_ID,
-    accountId,
-  );
+  const detail = await getVaultwardenLinkedServiceDetail(accountId, accountId);
 
   if (!detail) {
     return NextResponse.json({ error: "Linked service account not found." }, { status: 404 });
