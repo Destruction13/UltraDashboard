@@ -95,13 +95,25 @@ export const linkedServiceAccounts = pgTable(
     /**
      * Plain-text password. Acceptable in V1 because of the perimeter trust
      * model (see spec §"Security and risk acceptance"). Never log.
+     *
+     * Treated as legacy fallback: when `vaultItemId` is set, the runtime
+     * resolves the live password from Vaultwarden through `bw serve` instead.
      */
     passwordPlaintext: text("password_plaintext"),
     /**
      * TOTP shared secret in plain text. The current OTP is generated server
      * side. Do not return this column to clients by default.
+     *
+     * Treated as legacy fallback: when `vaultItemId` is set, the runtime
+     * resolves the current OTP through the Vaultwarden bridge instead.
      */
     totpSecretPlaintext: text("totp_secret_plaintext"),
+    /**
+     * Vaultwarden item id (optional). When set, this account's live login,
+     * password, and current TOTP are sourced from the localhost-only
+     * `bw serve` bridge instead of the plaintext columns above.
+     */
+    vaultItemId: varchar("vault_item_id", { length: 64 }),
     loginUrl: text("login_url"),
     status: varchar("status", { length: 32 }).notNull().default("active"),
     notes: text("notes"),
@@ -112,6 +124,7 @@ export const linkedServiceAccounts = pgTable(
     index("linked_service_accounts_root_idx").on(table.rootAccountId),
     index("linked_service_accounts_service_slug_idx").on(table.serviceSlug),
     index("linked_service_accounts_login_idx").on(table.loginOrEmail),
+    index("linked_service_accounts_vault_item_idx").on(table.vaultItemId),
   ],
 );
 

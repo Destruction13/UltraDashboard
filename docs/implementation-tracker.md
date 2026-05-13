@@ -61,8 +61,8 @@ This phase makes account operations usable.
 - [x] Build family tabs for `GitHub`, `Google`, and `Zoho`.
 - [x] Build root account list views.
 - [x] Build root account detail views.
-- [ ] Build linked service account CRUD flows.
-- [~] Add search and tag filtering.
+- [x] Build linked service account CRUD flows.
+- [x] Add search and tag filtering.
 
 ### Phase 4: secrets and instructions
 
@@ -71,7 +71,7 @@ This phase creates the main operational workflow.
 - [x] Implement server-side TOTP generation.
 - [x] Build the left credential panel with visible secrets and copy actions.
 - [x] Build the right roadmap renderer.
-- [ ] Add editing flows for notes and instruction content.
+- [x] Add editing flows for notes and instruction content.
 
 ### Phase 5: OmniRoute integration
 
@@ -97,7 +97,7 @@ This phase makes the dashboard automatable.
 
 - [x] Add services and accounts listing endpoints.
 - [x] Add full account card and TOTP endpoints.
-- [ ] Add notes and instructions update endpoints.
+- [x] Add notes and instructions update endpoints.
 - [ ] Add OmniRoute summary, providers, and sync endpoints.
 
 ### Phase 8: polish and release readiness
@@ -441,3 +441,96 @@ Next recommended task:
 - Persist real AccountManager entities with `vault_item_id`, finish tag
   filtering, and add note/instruction editing flows on top of the new
   Vaultwarden-first read path.
+
+#### May 10, 2026 (Phase 3 + 4 completion: persistence layer)
+
+Date: May 10, 2026
+Owner: Devin
+Focus: Phase 3 + Phase 4 completion — DB-backed AccountManager persistence,
+linked service CRUD, notes/instruction editing flows, internal API mutation
+endpoints, and tag filtering on top of the existing Vaultwarden bridge.
+Files changed:
+- `lib/db/schema.ts` (added `vault_item_id` column + index on
+  `linked_service_accounts`; documented plaintext columns as legacy
+  fallback).
+- `drizzle/0001_add_vault_item_id.sql` (new migration).
+- `lib/account-manager/repository.ts` (new — read + write data access
+  layer; credential resolution that prefers Vaultwarden through
+  `vault_item_id` and falls back to the plaintext columns; tag,
+  instruction, and search helpers).
+- `lib/account-manager/actions.ts` (new — server actions for create /
+  update / archive / delete flows for both root and linked service
+  accounts, plus notes and instruction editing actions).
+- `app/account-manager/[family]/page.tsx` (DB-backed root account list,
+  tag filter chips, "+ New root" inline form; the Vaultwarden bridge
+  card is now a discovery affordance underneath the real list).
+- `app/account-manager/[family]/[rootAccountId]/page.tsx` (DB-backed root
+  account detail page with metric cards, linked services list, and a
+  "+ New linked service" inline form; falls back to the bridge view
+  when the synthetic `vaultwarden-bridge` ID is in the URL).
+- `app/account-manager/[family]/[rootAccountId]/services/[linkedServiceId]/page.tsx`
+  (DB-backed linked service detail page with hybrid credential read,
+  inline notes editing, inline instruction JSON editing, archive
+  button; falls back to the bridge view when the synthetic
+  `vaultwarden-bridge` root ID is in the URL).
+- `components/account-manager/{create-root-account-form,create-linked-service-form,edit-notes-form,edit-instructions-form,archive-linked-service-button}.tsx`
+  (new client components wired to server actions).
+- `components/ui/{input,label,textarea}.tsx` (new minimal shadcn-style
+  primitives needed by the forms).
+- `app/api/internal/root-accounts/route.ts` (new — POST creates a root
+  account).
+- `app/api/internal/root-accounts/[rootAccountId]/linked-services/route.ts`
+  (new — POST creates a linked service under a root account).
+- `app/api/internal/linked-service-accounts/[accountId]/route.ts` (added
+  PATCH and DELETE; GET now prefers DB lookup and falls back to the
+  Vaultwarden bridge for synthetic IDs).
+- `app/api/internal/linked-service-accounts/[accountId]/notes/route.ts`
+  (new — PATCH replaces operator notes).
+- `app/api/internal/linked-service-accounts/[accountId]/instructions/route.ts`
+  (new — PATCH upserts the instruction document with `version: 1`,
+  `blocks: [...]` validation).
+- `app/api/internal/linked-service-accounts/[accountId]/archive/route.ts`
+  (new — POST archives a linked service).
+- `app/api/internal/tags/route.ts` (new — GET lists all tags).
+- `app/api/internal/search/route.ts` (new — GET cross-family search by
+  free-text query and / or tag slug).
+Verification:
+- `npm run typecheck` — clean.
+- `npm run lint` — clean.
+- `npm run build` — production build succeeds, all 14 routes generated.
+- `npm run db:migrate` — applies `0001_add_vault_item_id.sql` cleanly.
+- `npm run db:seed` — service families, tags, catalog seeded.
+- Smoke tests against `npm run start` on port 3030: created a root
+  account via POST `/api/internal/root-accounts`, attached a ChatGPT
+  linked service via POST `/api/internal/root-accounts/{id}/linked-services`
+  with `tagSlugs=["primary","agent"]`, edited notes via PATCH
+  `/notes`, upserted an instruction document via PATCH
+  `/instructions`, archived via POST `/archive`, and finally deleted
+  via DELETE — all returned the expected DTOs and HTTP codes.
+  `GET /api/internal/search?q=Smoke` and `?tag=agent` returned the
+  test row before cleanup.
+Status changes in tracker:
+- Phase 3 linked service CRUD flows marked `[x]`.
+- Phase 3 search and tag filtering marked `[x]` (real DB-backed tag
+  filter chips on family page + cross-family search endpoint).
+- Phase 4 editing flows for notes and instruction content marked `[x]`
+  (inline forms on linked service detail page + matching internal API).
+- Phase 7 notes and instructions update endpoints marked `[x]` (plus
+  new mutation endpoints for root + linked service CRUD and tag/search
+  reads).
+Open issues or risks:
+- Plaintext password / TOTP columns remain in `linked_service_accounts`
+  to satisfy the legacy spec contract. They are now documented as a
+  fallback path; new records should set `vault_item_id` and leave the
+  plaintext columns null.
+- Instruction editing accepts arbitrary JSON shape under the
+  `version: 1`, `blocks: [...]` envelope. The roadmap renderer only
+  supports the documented block types (overview, steps, tips,
+  warnings, links); unknown block types are silently ignored.
+- Bridge fallback view stays in place for the synthetic
+  `vaultwarden-bridge` root ID so existing operator muscle memory keeps
+  working until items are migrated into real linked services.
+Next recommended task:
+- Phase 5 (OmniRoute integration): implement the read-only SQLite
+  adapter against OmniRoute's `storage.sqlite`, then add the hourly
+  sync that normalizes provider summaries into Postgres.

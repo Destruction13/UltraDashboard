@@ -3,7 +3,11 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 
 import { LINKED_SERVICE_CATALOG, type InstructionDocumentContent } from "@/lib/db/catalog";
-import { type FamilySlug, isFamilySlug } from "@/lib/account-manager/families";
+import {
+  type FamilySlug,
+  isFamilySlug,
+  SYNTHETIC_VAULTWARDEN_ROOT_ACCOUNT_ID,
+} from "@/lib/account-manager/families";
 import {
   type VaultwardenField,
   type VaultwardenFolder,
@@ -616,6 +620,37 @@ export async function listVaultwardenRootAccounts(
   return projection.rootsByFamily[family].map((root) =>
     toRootSummary(root, projection.config.testItemId, projection.status),
   );
+}
+
+/**
+ * Global Vaultwarden bridge "discovery" summary used as a sidebar card on the
+ * AccountManager family pages. Independent of which family is being viewed.
+ */
+export async function getVaultwardenRootAccountSummary(): Promise<VaultwardenRootAccountSummary> {
+  const projection = await loadVaultProjection();
+  const totalItems = Object.values(projection.rootsByFamily).reduce(
+    (sum, roots) => sum + roots.reduce((acc, root) => acc + root.services.length, 0),
+    0,
+  );
+  const hasFixture =
+    projection.config.testItemId != null &&
+    projection.servicesById.has(projection.config.testItemId);
+  const status = projection.status.available
+    ? "online"
+    : projection.status.configured
+      ? "offline"
+      : "unconfigured";
+
+  return {
+    id: SYNTHETIC_VAULTWARDEN_ROOT_ACCOUNT_ID,
+    displayName: "Vaultwarden bridge",
+    description: "Shared bot vault exposed through bw serve on localhost.",
+    status,
+    itemCount: totalItems,
+    hasFixture,
+    primaryEmail: null,
+    username: null,
+  };
 }
 
 export async function getVaultwardenRootAccountDetail(

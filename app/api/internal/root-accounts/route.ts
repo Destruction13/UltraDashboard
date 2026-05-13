@@ -1,29 +1,33 @@
 import { NextResponse } from "next/server";
-import { ZodError } from "zod";
+import { z } from "zod";
 
-import { createVaultwardenRootAccountWithService } from "@/lib/account-manager/vaultwarden-bridge";
-import { createRootAccountRequestSchema } from "@/lib/account-manager/vaultwarden-route-schemas";
+import { FAMILY_SLUGS } from "@/lib/account-manager/families";
+import { createRootAccount } from "@/lib/account-manager/repository";
+
+const createSchema = z.object({
+  familySlug: z.enum(FAMILY_SLUGS),
+  displayName: z.string().min(1),
+  primaryEmail: z.string().email().nullable().optional(),
+  username: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
 
 export async function POST(request: Request) {
+  let payload: unknown;
   try {
-    const payload = createRootAccountRequestSchema.parse(await request.json());
-    const created = await createVaultwardenRootAccountWithService(
-      payload.root,
-      payload.linkedService,
-    );
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Body must be valid JSON." }, { status: 400 });
+  }
 
-    return NextResponse.json({ data: created }, { status: 201 });
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: error.issues[0]?.message ?? "Invalid root account payload." },
-        { status: 400 },
-      );
-    }
-
+  const parsed = createSchema.safeParse(payload);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create root account." },
-      { status: 500 },
+      { error: "Invalid payload.", issues: parsed.error.flatten() },
+      { status: 400 },
     );
   }
+
+  const row = await createRootAccount(parsed.data);
+  return NextResponse.json({ data: row }, { status: 201 });
 }
