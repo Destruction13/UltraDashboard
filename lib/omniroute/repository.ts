@@ -385,31 +385,62 @@ export function listProviders(options: ListProvidersOptions = {}): {
     const needle = `%${options.q.toLowerCase()}%`;
     params.push(needle, needle, needle, needle);
   }
-  const whereSql = wheres.length > 0 ? `WHERE ${wheres.join(" AND ")}` : "";
+  const baseWhereSql = wheres.length > 0 ? `WHERE ${wheres.join(" AND ")}` : "";
+
+  // `health` is derived from several columns and a comparison against "now",
+  // so we cannot push it into the base WHERE. Instead, we wrap the base query
+  // in a subquery that materializes the computed health bucket, then apply
+  // the health predicate on the outer SELECT — both for the page rows AND
+  // for the count. This way pagination + totals stay consistent.
+  const innerSelect = `
+    SELECT
+      id, provider, auth_type, name, email, display_name, priority, is_active,
+      test_status, last_error, last_error_at, rate_limited_until, backoff_level,
+      last_used_at, "group" AS "group", max_concurrent, default_model,
+      created_at, updated_at,
+      CASE
+        WHEN is_active = 0 THEN 'unknown'
+        WHEN rate_limited_until IS NOT NULL AND rate_limited_until > ? THEN 'rate_limited'
+        WHEN last_error_at IS NOT NULL AND COALESCE(test_status, '') <> 'active' THEN 'error'
+        WHEN COALESCE(backoff_level, 0) > 0 THEN 'degraded'
+        WHEN test_status = 'active' THEN 'active'
+        ELSE 'unknown'
+      END AS computed_health
+    FROM provider_connections
+    ${baseWhereSql}
+  `;
+
+  const nowIso = new Date().toISOString();
+  const outerWheres: string[] = [];
+  const outerParams: (string | number)[] = [];
+  if (options.health) {
+    outerWheres.push("computed_health = ?");
+    outerParams.push(options.health);
+  }
+  const outerWhereSql = outerWheres.length > 0 ? `WHERE ${outerWheres.join(" AND ")}` : "";
 
   const totalRow = db
-    .prepare<typeof params, { total: number }>(
-      `SELECT COUNT(*) AS total FROM provider_connections ${whereSql}`,
+    .prepare<(string | number)[], { total: number }>(
+      `SELECT COUNT(*) AS total FROM (${innerSelect}) ${outerWhereSql}`,
     )
-    .get(...params);
+    .get(nowIso, ...params, ...outerParams);
 
   const rows = db
-    .prepare<typeof params, ProviderConnectionRow>(
+    .prepare<(string | number)[], ProviderConnectionRow>(
       `SELECT id, provider, auth_type, name, email, display_name, priority, is_active,
               test_status, last_error, last_error_at, rate_limited_until, backoff_level,
-              last_used_at, "group" AS "group", max_concurrent, default_model, created_at, updated_at
-         FROM provider_connections
-         ${whereSql}
+              last_used_at, "group", max_concurrent, default_model, created_at, updated_at
+         FROM (${innerSelect})
+         ${outerWhereSql}
          ORDER BY is_active DESC, priority DESC, COALESCE(last_used_at,'') DESC
          LIMIT ? OFFSET ?`,
     )
-    .all(...params, limit, offset);
+    .all(nowIso, ...params, ...outerParams, limit, offset);
 
-  let items = rows.map(mapProvider);
-  if (options.health) {
-    items = items.filter((row) => row.health === options.health);
-  }
-  return { items, total: totalRow?.total ?? items.length };
+  return {
+    items: rows.map(mapProvider),
+    total: totalRow?.total ?? rows.length,
+  };
 }
 
 export interface ListRoutesOptions {
