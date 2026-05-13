@@ -79,12 +79,16 @@ This phase connects the app to real OmniRoute data.
 
 - [x] Implement the read-only SQLite adapter (`lib/omniroute/db.ts`,
   `lib/omniroute/repository.ts`).
-- [~] Implement hourly OmniRoute sync. _Deferred — V1 reads directly from the
-  mounted SQLite on every request, which is fast enough at current volumes._
-- [~] Persist normalized provider summaries to Postgres. _Deferred — same
-  rationale; not needed while direct reads stay sub-50ms._
+- [x] Implement OmniRoute snapshot refresh on the host
+  (`scripts/deploy/omniroute_snapshot.sh` + `omniroute-snapshot.timer`,
+  every 60 s). Required because OmniRoute's live `storage.sqlite` uses WAL
+  journaling and would need a writable directory inside the container.
+- [~] Persist normalized provider summaries to Postgres. _Deferred — reads
+  against the snapshot are already sub-50 ms; revisit if traffic grows._
 - [x] Add sync failure handling that preserves the last good snapshot
-  (degraded reads return empty lists + `OmniRouteOfflineBanner`).
+  (degraded reads return empty lists + `OmniRouteOfflineBanner`; the
+  `VACUUM INTO` -> atomic `mv` pattern guarantees readers never see a
+  half-written snapshot).
 
 ### Phase 6: overview and OmniRoute UI
 

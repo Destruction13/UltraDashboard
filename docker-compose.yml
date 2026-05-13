@@ -54,8 +54,12 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
-      # READ-ONLY mount of OmniRoute's SQLite store. NEVER mount as rw.
-      - ${OMNIROUTE_SQLITE_HOST_PATH:-/root/.omniroute/storage.sqlite}:/var/omniroute/storage.sqlite:ro
+      # READ-ONLY mount of a snapshot of OmniRoute's SQLite store. We mount a
+      # snapshot (not the live storage.sqlite) so the WAL/SHM sidecars stay on
+      # OmniRoute's side. The snapshot is produced via `sqlite3 ... VACUUM
+      # INTO ...` from a systemd timer on the host (`omniroute-snapshot.timer`).
+      # NEVER mount as rw — the dashboard is strictly read-only.
+      - ${OMNIROUTE_SQLITE_HOST_PATH:-/root/.omniroute-snapshot/storage.sqlite}:/var/omniroute/storage.sqlite:ro
     networks:
       - ultradashboard-net
 

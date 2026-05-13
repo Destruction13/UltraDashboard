@@ -96,6 +96,14 @@ OmniRoute endpoints are **read-only by design**. They expose normalized views of
 open the SQLite file produces an `HTTP 503` on `/omniroute/overview` (and empty
 lists on the other three) so the agent can fall back gracefully.
 
+Under the hood, UltraDashboard reads a *snapshot* of OmniRoute's database, not
+the live file. The host runs `omniroute-snapshot.timer` every 60 s, which
+invokes `sqlite3 ... VACUUM INTO ...` to produce a journal-free copy at
+`/root/.omniroute-snapshot/storage.sqlite`; the container mounts that path
+read-only. So the data your agent sees is at most ~60 s stale. If you need
+sub-second freshness, raise the timer cadence (or invoke the snapshot script
+on demand) — there is no separate "refresh" endpoint exposed to the agent.
+
 ### Write — root accounts
 
 ```http
