@@ -9,7 +9,9 @@ ARG NODE_VERSION=22-alpine
 
 FROM node:${NODE_VERSION} AS deps
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
+# libc6-compat for glibc-built prebuilds; python3/make/g++ for native addons
+# (better-sqlite3) when a musl prebuild isn't available for our arch.
+RUN apk add --no-cache libc6-compat python3 make g++
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
 
@@ -30,6 +32,10 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Carry better-sqlite3's compiled native binding into the runtime image.
+# Next.js standalone tracing usually picks this up, but copying it explicitly
+# keeps the OmniRoute mirror working even if the trace misses the .node file.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
 USER nextjs
 EXPOSE 3000

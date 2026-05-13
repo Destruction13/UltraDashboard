@@ -84,8 +84,25 @@ responses return `{ "data": ... }`; failures return `{ "error": "...",
 | GET | `/tags` | All tag slugs + labels. |
 | GET | `/search?q=&tag=&family=` | Free-text search across root + linked services. |
 | GET | `/export?format=json\|csv&family=&includeSecrets=true\|false` | Bulk export (see below). |
+| GET | `/omniroute/overview` | KPI snapshot of OmniRoute's SQLite (providers / routes / traffic). |
+| GET | `/omniroute/providers?provider=&health=&isActive=&q=&limit=&offset=` | OmniRoute provider connections (read-only mirror). |
+| GET | `/omniroute/routes?q=&limit=&offset=` | OmniRoute combos (a.k.a. routes). |
+| GET | `/omniroute/live-runs?provider=&status=2xx\|4xx\|5xx&errorsOnly=&q=&limit=&offset=` | Recent rows from OmniRoute's `call_logs`. |
 
 `familySlug` is one of `github`, `google`, `zoho`.
+
+OmniRoute endpoints are **read-only by design**. They expose normalized views of
+`storage.sqlite`, not the raw rows; the dashboard never writes back. Failure to
+open the SQLite file produces an `HTTP 503` on `/omniroute/overview` (and empty
+lists on the other three) so the agent can fall back gracefully.
+
+Under the hood, UltraDashboard reads a *snapshot* of OmniRoute's database, not
+the live file. The host runs `omniroute-snapshot.timer` every 60 s, which
+invokes `sqlite3 ... VACUUM INTO ...` to produce a journal-free copy at
+`/root/.omniroute-snapshot/storage.sqlite`; the container mounts that path
+read-only. So the data your agent sees is at most ~60 s stale. If you need
+sub-second freshness, raise the timer cadence (or invoke the snapshot script
+on demand) — there is no separate "refresh" endpoint exposed to the agent.
 
 ### Write — root accounts
 
