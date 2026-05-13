@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
 import { db, schema } from "@/lib/db";
 import {
@@ -387,6 +387,95 @@ export async function getLinkedServiceDetailById(
 
 export async function listTags(): Promise<TagRow[]> {
   return db.select().from(schema.tags).orderBy(asc(schema.tags.label));
+}
+
+export type AccountManagerStats = {
+  families: number;
+  rootAccounts: number;
+  linkedServices: number;
+  archivedRootAccounts: number;
+  archivedLinkedServices: number;
+  perFamily: Array<{ slug: string; label: string; rootAccounts: number; linkedServices: number }>;
+  latestRootCreatedAt: string | null;
+};
+
+export async function getAccountManagerStats(): Promise<AccountManagerStats> {
+  const families = await db
+    .select()
+    .from(schema.serviceFamilies)
+    .orderBy(asc(schema.serviceFamilies.sortOrder), asc(schema.serviceFamilies.name));
+
+  const [rootTotalsRow] = await db
+    .select({
+      total: count(),
+    })
+    .from(schema.rootAccounts);
+
+  const [rootArchivedRow] = await db
+    .select({ total: count() })
+    .from(schema.rootAccounts)
+    .where(isNotNull(schema.rootAccounts.archivedAt));
+
+  const [linkedTotalsRow] = await db
+    .select({ total: count() })
+    .from(schema.linkedServiceAccounts);
+
+  const [linkedArchivedRow] = await db
+    .select({ total: count() })
+    .from(schema.linkedServiceAccounts)
+    .where(isNotNull(schema.linkedServiceAccounts.archivedAt));
+
+  const rootPerFamily = await db
+    .select({
+      familyId: schema.rootAccounts.serviceFamilyId,
+      total: count(),
+    })
+    .from(schema.rootAccounts)
+    .where(isNull(schema.rootAccounts.archivedAt))
+    .groupBy(schema.rootAccounts.serviceFamilyId);
+
+  const linkedPerFamily = await db
+    .select({
+      familyId: schema.rootAccounts.serviceFamilyId,
+      total: count(),
+    })
+    .from(schema.linkedServiceAccounts)
+    .innerJoin(
+      schema.rootAccounts,
+      eq(schema.rootAccounts.id, schema.linkedServiceAccounts.rootAccountId),
+    )
+    .where(
+      and(
+        isNull(schema.linkedServiceAccounts.archivedAt),
+        isNull(schema.rootAccounts.archivedAt),
+      ),
+    )
+    .groupBy(schema.rootAccounts.serviceFamilyId);
+
+  const [latestRoot] = await db
+    .select({ createdAt: schema.rootAccounts.createdAt })
+    .from(schema.rootAccounts)
+    .where(isNull(schema.rootAccounts.archivedAt))
+    .orderBy(desc(schema.rootAccounts.createdAt))
+    .limit(1);
+
+  const rootByFamily = new Map(rootPerFamily.map((row) => [row.familyId, Number(row.total)]));
+  const linkedByFamily = new Map(linkedPerFamily.map((row) => [row.familyId, Number(row.total)]));
+
+  return {
+    families: families.length,
+    rootAccounts: Number(rootTotalsRow?.total ?? 0),
+    linkedServices: Number(linkedTotalsRow?.total ?? 0),
+    archivedRootAccounts: Number(rootArchivedRow?.total ?? 0),
+    archivedLinkedServices: Number(linkedArchivedRow?.total ?? 0),
+    perFamily: families.map((family) => ({
+      slug: family.slug,
+      label: family.name,
+      rootAccounts: rootByFamily.get(family.id) ?? 0,
+      linkedServices: linkedByFamily.get(family.id) ?? 0,
+    })),
+    latestRootCreatedAt: latestRoot?.createdAt ? new Date(latestRoot.createdAt).toISOString() : null,
+  };
 }
 
 export async function setTagsForLinkedService(

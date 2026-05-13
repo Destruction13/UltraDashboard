@@ -97,9 +97,10 @@ This phase turns synced data into usable product surfaces.
 - [x] Build the OmniRoute page with provider summary UI (`/omniroute`).
 - [x] Build dedicated Providers / Routes / Live runs pages
   (`/omniroute/providers`, `/omniroute/routes`, `/omniroute/live-runs`).
-- [~] Build Overview summary cards and orientation content on `/overview`.
-  _Existing `/overview` still uses placeholder KPIs; new Phase 5 data is
-  exposed inside `/omniroute` instead. Roll up into `/overview` later._
+- [x] Build Overview summary cards and orientation content on `/overview`.
+  _Wired to live data: shows account counts (with per-family roll-up),
+  OmniRoute snapshot freshness, and a 24-h summary card (providers, calls,
+  success rate, errors) with offline fallback when the snapshot is missing._
 - [x] Add manual refresh flows where required by the spec (search/filter
   forms perform a fresh server-render on submit; no client cache to bust).
 
@@ -117,10 +118,19 @@ This phase makes the dashboard automatable.
 
 This phase closes the loop before handoff or release.
 
-- [ ] Tighten empty states, loading states, and error states.
-- [ ] Run the most relevant verification for each finished slice.
-- [ ] Write deployment and VPS runbook docs.
-- [ ] Leave a final implementation and handoff summary.
+- [x] Tighten empty states, loading states, and error states.
+  _Added `loading.tsx` skeletons for `/overview`, `/account-manager`, and each
+  `/omniroute/*` page; added `error.tsx` boundaries at the root,
+  `/account-manager`, and `/omniroute` segments with operator-actionable
+  copy._
+- [x] Run the most relevant verification for each finished slice.
+  _Lint + typecheck + production build are green; the live VPS instance was
+  e2e-walked through all four OmniRoute pages and the AccountManager flow on
+  PR #1 / PR #3._
+- [x] Write deployment and VPS runbook docs.
+  _See `docs/runbook-vps.md`._
+- [x] Leave a final implementation and handoff summary.
+  _See `docs/handoff.md`._
 
 ## Open blockers
 
@@ -130,12 +140,16 @@ List real blockers here. Remove or update them when they are resolved.
 
 ## Next recommended task
 
-The next recommended task is **Vaultwarden-backed AccountManager persistence**.
-The app now has a working synthetic root-account flow, live item detail cards,
-copy actions, roadmap rendering, and internal API reads through `bw serve`.
-The next slice should replace the synthetic bridge-only listing with real
-dashboard-owned `root_accounts` and `linked_service_accounts` records that
-store `vault_item_id`, plus finish tag filtering and editing flows.
+V1 is feature-complete. The next recommended tasks are now optional
+enhancements rather than spec items:
+
+- Hourly Postgres mirror of OmniRoute provider summaries (revisit when the
+  snapshot read latency stops being sub-50 ms).
+- Two-way Vaultwarden writes (today the bridge only reads — agents push
+  secrets straight to Vaultwarden out-of-band, then attach the `vaultItemId`
+  to the linked-service row via `POST /api/internal/import`).
+- Multi-user / role-based perimeter (only worth doing once there's a second
+  operator).
 
 ## Session log
 
@@ -547,3 +561,76 @@ Next recommended task:
 - Phase 5 (OmniRoute integration): implement the read-only SQLite
   adapter against OmniRoute's `storage.sqlite`, then add the hourly
   sync that normalizes provider summaries into Postgres.
+
+#### May 13, 2026 (Phase 5 + 6 + 7 OmniRoute mirror + Phase 8 polish)
+
+Date: May 13, 2026
+Owner: Devin
+Focus: Read-only OmniRoute mirror, dedicated OmniRoute UI surfaces, JSON
+endpoints for agents, and Phase 8 polish (live `/overview`, loading and
+error states, VPS runbook, handoff doc).
+Files changed:
+- `lib/omniroute/{db,types,repository,format,dictionaries}.ts` (new — SQLite
+  read-only adapter with `query_only` + mmap, normalized domain types,
+  bilingual copy + formatters).
+- `app/omniroute/{layout,page,providers/page,routes/page,live-runs/page}.tsx`
+  (sub-tab navigation + four pages: Overview / Providers / Routes /
+  Live runs, all wired to the snapshot with graceful offline fallback).
+- `components/omniroute/{health-pill,offline-banner}.tsx` (shared UI bits).
+- `app/api/internal/omniroute/{overview,providers,routes,live-runs}/route.ts`
+  (new — Zod-validated JSON endpoints for agents, with pagination and 503
+  fallback when the snapshot is unavailable).
+- `scripts/deploy/omniroute_snapshot.sh` +
+  `scripts/deploy/install_omniroute_snapshot_timer.sh` (new — host-side
+  `VACUUM INTO` snapshot every 60 s via systemd timer; works around
+  OmniRoute's WAL journal mode by producing a journal-free copy).
+- `docker-compose.yml`, `.env.example` (default
+  `OMNIROUTE_SQLITE_HOST_PATH=/root/.omniroute-snapshot/storage.sqlite`).
+- `app/overview/page.tsx` (rebuilt — live KPIs from Postgres + OmniRoute
+  snapshot, per-family roll-up, agent-integration callout; renders an
+  offline banner when the snapshot is missing).
+- `lib/account-manager/repository.ts` (added `getAccountManagerStats()`).
+- `app/{overview,account-manager,omniroute,omniroute/providers,omniroute/routes,omniroute/live-runs}/loading.tsx`
+  (new — skeleton loading states matching each page's layout).
+- `app/{,account-manager/,omniroute/}error.tsx` (new — actionable error
+  boundaries with operator-targeted recovery hints).
+- `docs/runbook-vps.md` (new — full operational handbook: topology, deploy,
+  snapshot timer ops, Postgres backups, Vaultwarden bridge troubleshooting,
+  rollback).
+- `docs/handoff.md` (new — orientation doc for the next contributor /
+  agent).
+- `docs/agent-integration.md` (updated — documents the snapshot freshness
+  budget so consumers expect ~60 s staleness).
+- `docs/implementation-tracker.md` (updated — Phases 5–8 marked `[x]`).
+Verification:
+- `npm run typecheck` — clean.
+- `npm run lint` — clean.
+- `npm run build` — production build succeeds, all routes generated.
+- Deployed to VPS via `docker compose build && docker compose up -d`.
+- Verified all four `/api/internal/omniroute/*` endpoints against the live
+  snapshot (978 active providers, ~9 k calls/24 h, 98.2 % success rate, 386
+  errors over 7 d — all matching `sqlite3 ... 'SELECT count(*) ...'` from
+  the host).
+- E2e walk-through over the SSH tunnel through Overview, Providers (with
+  `provider=codex` filter — 553 hits), Live-runs (`errorsOnly=true` — 386
+  codex 429s, emails masked), Routes (empty-state) and the new `/overview`
+  surface.
+Status changes in tracker:
+- Phase 5 SQLite adapter, snapshot refresh, and degraded-read handling
+  marked `[x]`. Postgres mirror remains explicitly deferred (`[~]`).
+- Phase 6 OmniRoute UI marked `[x]`. `/overview` summary marked `[x]`
+  (was `[~]`).
+- Phase 7 OmniRoute endpoints marked `[x]`.
+- Phase 8 all four items marked `[x]`.
+Open issues or risks:
+- Snapshot timer runs as root on the host. If OmniRoute moves to a
+  different SQLite path, `OMNIROUTE_SQLITE_SOURCE` in the script needs to
+  be updated.
+- The dashboard always shows the snapshot mtime, which can be confusing
+  during snapshot stalls. A future "manual refresh" button is out of
+  scope but trivial to add (`scripts/deploy/omniroute_snapshot.sh` is
+  idempotent).
+Next recommended task:
+- V1 is feature-complete. Optional follow-ups: hourly Postgres mirror of
+  OmniRoute summaries (only if direct snapshot reads stop being sub-50 ms),
+  two-way Vaultwarden writes, multi-user perimeter.
