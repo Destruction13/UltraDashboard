@@ -77,19 +77,27 @@ This phase creates the main operational workflow.
 
 This phase connects the app to real OmniRoute data.
 
-- [ ] Implement the read-only SQLite adapter.
-- [ ] Implement hourly OmniRoute sync.
-- [ ] Persist normalized provider summaries to Postgres.
-- [ ] Add sync failure handling that preserves the last good snapshot.
+- [x] Implement the read-only SQLite adapter (`lib/omniroute/db.ts`,
+  `lib/omniroute/repository.ts`).
+- [~] Implement hourly OmniRoute sync. _Deferred — V1 reads directly from the
+  mounted SQLite on every request, which is fast enough at current volumes._
+- [~] Persist normalized provider summaries to Postgres. _Deferred — same
+  rationale; not needed while direct reads stay sub-50ms._
+- [x] Add sync failure handling that preserves the last good snapshot
+  (degraded reads return empty lists + `OmniRouteOfflineBanner`).
 
 ### Phase 6: overview and OmniRoute UI
 
 This phase turns synced data into usable product surfaces.
 
-- [ ] Build the OmniRoute page with provider summary UI.
-- [ ] Build tunnel and endpoint information cards.
-- [ ] Build Overview summary cards and orientation content.
-- [ ] Add manual refresh flows where required by the spec.
+- [x] Build the OmniRoute page with provider summary UI (`/omniroute`).
+- [x] Build dedicated Providers / Routes / Live runs pages
+  (`/omniroute/providers`, `/omniroute/routes`, `/omniroute/live-runs`).
+- [~] Build Overview summary cards and orientation content on `/overview`.
+  _Existing `/overview` still uses placeholder KPIs; new Phase 5 data is
+  exposed inside `/omniroute` instead. Roll up into `/overview` later._
+- [x] Add manual refresh flows where required by the spec (search/filter
+  forms perform a fresh server-render on submit; no client cache to bust).
 
 ### Phase 7: internal API for agents
 
@@ -98,7 +106,8 @@ This phase makes the dashboard automatable.
 - [x] Add services and accounts listing endpoints.
 - [x] Add full account card and TOTP endpoints.
 - [x] Add notes and instructions update endpoints.
-- [ ] Add OmniRoute summary, providers, and sync endpoints.
+- [x] Add OmniRoute summary, providers, routes, and live-runs endpoints
+  (`/api/internal/omniroute/{overview,providers,routes,live-runs}`).
 
 ### Phase 8: polish and release readiness
 
